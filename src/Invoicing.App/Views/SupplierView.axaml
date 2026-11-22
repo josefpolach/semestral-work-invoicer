@@ -1,0 +1,72 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Invoicing.App.ViewModels"
+        xmlns:views="using:Invoicing.App.Views"
+        x:Class="Invoicing.App.Views.SupplierView" x:DataType="vm:SupplierViewModel" >
+
+  <ScrollViewer>
+    <StackPanel Margin="12,22" MaxWidth="760" HorizontalAlignment="Left" Spacing="14">
+      <TextBlock Classes="heading" Text="Údaje dodavatele" />
+      <UniformGrid Columns="2" ColumnSpacing="16" RowSpacing="10">
+      <StackPanel Spacing="4">
+        <TextBlock Text="Název" />
+        <TextBox Text="{Binding Form.Name}" />
+      </StackPanel>
+      <StackPanel Spacing="4">
+        <TextBlock Text="IČO" />
+        <TextBox Text="{Binding Form.Ico}" />
+      </StackPanel>
+      <StackPanel Spacing="4">
+        <TextBlock Text="Ulice" />
+        <TextBox Text="{Binding Form.Street}" />
+      </StackPanel>
+      <StackPanel Spacing="4">
+        <TextBlock Text="DIČ" />
+        <TextBox Text="{Binding Form.Dic}" />
+      </StackPanel>
+      <StackPanel Spacing="4">
+        <TextBlock Text="Obec" />
+        <TextBox Text="{Binding Form.City}" />
+      </StackPanel>
+      <StackPanel Spacing="4">
+        <TextBlock Text="PSČ" />
+        <TextBox Text="{Binding Form.PostalCode}" />
+      </StackPanel>
+      </UniformGrid>
+      <StackPanel Orientation="Horizontal" Spacing="16">
+        <Button Content="Načíst z ARES" Command="{Binding LoadCompanyCommand}" />
+        <CheckBox Content="Plátce DPH" IsChecked="{Binding IsVatPayer}" />
+      </StackPanel>
+      <StackPanel Spacing="4">
+        <TextBlock Text="Zápis v obchodním rejstříku" />
+        <TextBox Text="{Binding RegisterEntry}" />
+      </StackPanel>
+      <UniformGrid Columns="2" ColumnSpacing="16" RowSpacing="10">
+      <StackPanel Spacing="4">
+        <TextBlock Text="Číslo účtu" />
+        <TextBox Text="{Binding BankAccount}" />
+      </StackPanel>
+        <StackPanel Spacing="4">
+          <TextBlock Text="IBAN" />
+          <TextBox Text="{Binding Iban, Mode=OneWay}" IsReadOnly="True" />
+        </StackPanel>
+      <StackPanel Spacing="4">
+        <TextBlock Text="Vystavil" />
+        <TextBox Text="{Binding IssuedBy}" />
+      </StackPanel>
+        <StackPanel Spacing="4">
+          <TextBlock Text="Výchozí splatnost (dní)" />
+          <NumericUpDown Minimum="0" Maximum="36500" Value="{Binding DueDays}" />
+        </StackPanel>
+      </UniformGrid>
+      <Button Classes="accent" Content="Uložit" Command="{Binding SaveCommand}" />
+      <ItemsControl ItemsSource="{Binding Messages}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="x:String"><TextBlock Classes="message" Text="{Binding .}" /></DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+      <Separator />
+      <TextBlock Classes="message" Text="{Binding EmailStatus}" />
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

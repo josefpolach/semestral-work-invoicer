@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(Configuration)' == 'Debug'">
+    <None Include="../../.env" Link=".env" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Never" Condition="Exists('../../.env')" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Invoicing.Core/Invoicing.Core.csproj" />
+    <ProjectReference Include="../Invoicing.Data/Invoicing.Data.csproj" />
+    <ProjectReference Include="../Invoicing.Ares/Invoicing.Ares.csproj" />
+    <ProjectReference Include="../Invoicing.Email/Invoicing.Email.csproj" />
+    <ProjectReference Include="../Invoicing.Pdf/Invoicing.Pdf.csproj" />
+    <PackageReference Include="Avalonia" Version="12.1.2" />
+    <PackageReference Include="Avalonia.Desktop" Version="12.1.2" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.2" />
+    <PackageReference Include="Avalonia.Fonts.Inter" Version="12.1.2" />
+    <PackageReference Include="Avalonia.Controls.DataGrid" Version="12.1.2" />
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+  </ItemGroup>
+</Project>

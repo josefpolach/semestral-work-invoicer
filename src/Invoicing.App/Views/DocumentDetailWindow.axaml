@@ -1,0 +1,160 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Invoicing.App.ViewModels"
+        xmlns:views="using:Invoicing.App.Views"
+        x:Class="Invoicing.App.Views.DocumentDetailWindow" x:DataType="vm:DocumentDetailViewModel" xmlns:party="using:Invoicing.Core.Parties"
+        x:Name="DetailWindow" Title="{Binding Title}" Width="1160" Height="820" MinWidth="850" MinHeight="600" WindowStartupLocation="CenterOwner">
+
+  <Grid Margin="20" RowDefinitions="*,Auto" RowSpacing="16">
+    <ScrollViewer>
+      <StackPanel Spacing="14">
+        <TextBlock Classes="heading" Text="{Binding Title}" />
+        <TextBlock Text="{Binding Status}" />
+        <TextBlock Classes="section" Text="Odběratel" />
+        <ComboBox ItemsSource="{Binding Customers}" SelectedItem="{Binding SelectedCustomer}"
+                  IsVisible="{Binding CanSelectCustomer}" MinWidth="250">
+          <ComboBox.ItemTemplate>
+            <DataTemplate x:DataType="party:Customer"><TextBlock Text="{Binding Name}" /></DataTemplate>
+          </ComboBox.ItemTemplate>
+        </ComboBox>
+        <TextBlock Text="{Binding CustomerName}" IsVisible="{Binding !CanSelectCustomer}" />
+        <WrapPanel ItemSpacing="16">
+        <StackPanel Spacing="4">
+          <TextBlock Text="Datum vystavení" />
+          <CalendarDatePicker SelectedDate="{Binding IssueDate}" IsEnabled="{Binding IsEditable}" />
+        </StackPanel>
+        <StackPanel Spacing="4" IsVisible="{Binding HasVat}">
+          <TextBlock Text="Datum uskutečnění zdanitelného plnění (DUZP)" />
+          <CalendarDatePicker SelectedDate="{Binding SupplyDate}" IsEnabled="{Binding IsEditable}" />
+        </StackPanel>
+        <StackPanel Spacing="4">
+          <TextBlock Text="Datum splatnosti" />
+          <CalendarDatePicker SelectedDate="{Binding DueDate}" IsEnabled="{Binding IsEditable}" />
+        </StackPanel>
+        </WrapPanel>
+        <StackPanel IsVisible="{Binding IsCreditNote}" Spacing="4">
+          <TextBlock Text="{Binding OriginalNumber, StringFormat='Opravovaný doklad: {0}'}" />
+          <TextBlock Text="Důvod opravy" />
+          <TextBox Text="{Binding CorrectionReason}" IsReadOnly="{Binding !IsEditable}" />
+        </StackPanel>
+        <TextBlock Classes="section" Text="Položky" />
+      <DataGrid ItemsSource="{Binding Lines}" SelectedItem="{Binding SelectedLine}"
+                IsReadOnly="{Binding !IsEditable}"
+                MinHeight="145" MaxHeight="420" AutoGenerateColumns="False">
+        <DataGrid.Columns>
+        <DataGridTemplateColumn Header="Popis" Width="2*">
+          <DataGridTemplateColumn.CellTemplate>
+            <DataTemplate x:DataType="vm:InvoiceLineViewModel">
+              <TextBlock Margin="6,0" VerticalAlignment="Center" Text="{Binding Description}" />
+            </DataTemplate>
+          </DataGridTemplateColumn.CellTemplate>
+          <DataGridTemplateColumn.CellEditingTemplate>
+            <DataTemplate x:DataType="vm:InvoiceLineViewModel">
+              <TextBox Text="{Binding Description, UpdateSourceTrigger=PropertyChanged}" />
+            </DataTemplate>
+          </DataGridTemplateColumn.CellEditingTemplate>
+        </DataGridTemplateColumn>
+        <DataGridTemplateColumn Header="Množství" Width="105">
+          <DataGridTemplateColumn.CellTemplate>
+            <DataTemplate x:DataType="vm:InvoiceLineViewModel">
+              <TextBlock Margin="6,0" VerticalAlignment="Center" Text="{Binding Quantity}" ToolTip.Tip="{Binding QuantityError}" />
+            </DataTemplate>
+          </DataGridTemplateColumn.CellTemplate>
+          <DataGridTemplateColumn.CellEditingTemplate>
+            <DataTemplate x:DataType="vm:InvoiceLineViewModel">
+              <TextBox Text="{Binding Quantity, UpdateSourceTrigger=PropertyChanged}" ToolTip.Tip="{Binding QuantityError}" />
+            </DataTemplate>
+          </DataGridTemplateColumn.CellEditingTemplate>
+        </DataGridTemplateColumn>
+        <DataGridTemplateColumn Header="Jednotka" Width="88">
+          <DataGridTemplateColumn.CellTemplate>
+            <DataTemplate x:DataType="vm:InvoiceLineViewModel">
+              <TextBlock Margin="6,0" VerticalAlignment="Center" Text="{Binding Unit}" />
+            </DataTemplate>
+          </DataGridTemplateColumn.CellTemplate>
+          <DataGridTemplateColumn.CellEditingTemplate>
+            <DataTemplate x:DataType="vm:InvoiceLineViewModel">
+              <TextBox Text="{Binding Unit, UpdateSourceTrigger=PropertyChanged}" />
+            </DataTemplate>
+          </DataGridTemplateColumn.CellEditingTemplate>
+        </DataGridTemplateColumn>
+        <DataGridTemplateColumn Header="{Binding #DetailWindow.((vm:DocumentDetailViewModel)DataContext).UnitPriceHeader}" Width="202">
+          <DataGridTemplateColumn.CellTemplate>
+            <DataTemplate x:DataType="vm:InvoiceLineViewModel">
+              <TextBlock Margin="6,0" VerticalAlignment="Center" Text="{Binding UnitPrice}" ToolTip.Tip="{Binding PriceError}" />
+            </DataTemplate>
+          </DataGridTemplateColumn.CellTemplate>
+          <DataGridTemplateColumn.CellEditingTemplate>
+            <DataTemplate x:DataType="vm:InvoiceLineViewModel">
+              <TextBox Text="{Binding UnitPrice, UpdateSourceTrigger=PropertyChanged}" ToolTip.Tip="{Binding PriceError}" />
+            </DataTemplate>
+          </DataGridTemplateColumn.CellEditingTemplate>
+        </DataGridTemplateColumn>
+        <DataGridTemplateColumn Header="Sleva %" Width="90">
+          <DataGridTemplateColumn.CellTemplate>
+            <DataTemplate x:DataType="vm:InvoiceLineViewModel">
+              <TextBlock Margin="6,0" VerticalAlignment="Center" Text="{Binding Discount}" ToolTip.Tip="{Binding DiscountError}" />
+            </DataTemplate>
+          </DataGridTemplateColumn.CellTemplate>
+          <DataGridTemplateColumn.CellEditingTemplate>
+            <DataTemplate x:DataType="vm:InvoiceLineViewModel">
+              <TextBox Text="{Binding Discount, UpdateSourceTrigger=PropertyChanged}" ToolTip.Tip="{Binding DiscountError}" />
+            </DataTemplate>
+          </DataGridTemplateColumn.CellEditingTemplate>
+        </DataGridTemplateColumn>
+        <DataGridTemplateColumn Header="Sazba DPH" Width="110"
+                                IsVisible="{Binding #DetailWindow.((vm:DocumentDetailViewModel)DataContext).HasVat}">
+          <DataGridTemplateColumn.CellTemplate>
+            <DataTemplate x:DataType="vm:InvoiceLineViewModel">
+              <TextBlock Margin="6,0" VerticalAlignment="Center" Text="{Binding VatRate, StringFormat='{}{0} %'}" />
+            </DataTemplate>
+          </DataGridTemplateColumn.CellTemplate>
+          <DataGridTemplateColumn.CellEditingTemplate>
+            <DataTemplate x:DataType="vm:InvoiceLineViewModel">
+              <ComboBox ItemsSource="{Binding VatRates}" SelectedItem="{Binding VatRate}" />
+            </DataTemplate>
+          </DataGridTemplateColumn.CellEditingTemplate>
+        </DataGridTemplateColumn>
+        <DataGridTextColumn Header="Základ" Width="125" IsReadOnly="True"
+                            Binding="{Binding Base, DataType=vm:InvoiceLineViewModel}" />
+        </DataGrid.Columns>
+      </DataGrid>
+        <WrapPanel ItemSpacing="8">
+          <Button Content="Přidat řádek" Command="{Binding AddLineCommand}" />
+          <Button Content="Odebrat řádek" Command="{Binding RemoveLineCommand}" />
+        </WrapPanel>
+        <StackPanel HorizontalAlignment="Right" Spacing="5">
+          <TextBlock Text="{Binding Base, StringFormat='Základ celkem: {0}'}" />
+      <ItemsControl ItemsSource="{Binding VatRows}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="x:String"><TextBlock Classes="message" Text="{Binding .}" /></DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+          <TextBlock Classes="section" Text="{Binding Total, StringFormat='Celkem: {0}'}" />
+        </StackPanel>
+      <ItemsControl ItemsSource="{Binding Messages}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="x:String"><TextBlock Classes="message" Text="{Binding .}" /></DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+        <TextBlock Text="{Binding SentInfo}" />
+      </StackPanel>
+    </ScrollViewer>
+    <WrapPanel Grid.Row="1" ItemSpacing="8" LineSpacing="8">
+      <Button Content="Uložit" Command="{Binding SaveCommand}" />
+      <Button Classes="accent" Content="Vystavit" Command="{Binding IssueCommand}" />
+      <Button Content="Smazat" Command="{Binding DeleteCommand}" />
+      <Button Content="Zaplaceno" Command="{Binding MarkPaidCommand}" />
+      <Button Content="Stornovat" Command="{Binding CancelDocumentCommand}" />
+      <Button Content="Opravný doklad" Command="{Binding CreateCreditNoteCommand}" />
+      <Button Content="Export PDF" Command="{Binding ExportCommand}" />
+      <Button Command="{Binding SendEmailCommand}" ToolTip.Tip="{Binding SendEmailToolTip}" ToolTip.ShowOnDisabled="True">
+        <StackPanel Orientation="Horizontal" Spacing="7">
+          <Path Data="M3,6 H21 V18 H3 Z M3,6 L12,13 L21,6" Stroke="{DynamicResource SystemControlForegroundBaseHighBrush}"
+                StrokeThickness="1.5" Width="16" Height="16" Stretch="Uniform" />
+          <TextBlock Text="Odeslat e-mailem" />
+        </StackPanel>
+      </Button>
+    </WrapPanel>
+  </Grid>
+</Window>

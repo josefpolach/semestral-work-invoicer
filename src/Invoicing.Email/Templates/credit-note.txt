@@ -1,0 +1,9 @@
+Dobrý den,
+
+v příloze Vám zasíláme opravný daňový doklad č. {{DocumentNumber}} pro {{CustomerName}}.
+
+Částka opravy: {{TotalAmount}}
+
+S pozdravem
+{{IssuedBy}}
+{{SupplierName}}

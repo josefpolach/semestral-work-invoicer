@@ -1,0 +1,12 @@
+.git
+.idea
+.agents
+.codex
+.aws
+.env
+**/.env
+**/bin
+**/obj
+**/TestResults
+data
+artifacts

@@ -1,0 +1,13 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Invoicing.App.ViewModels"
+        xmlns:views="using:Invoicing.App.Views"
+        x:Class="Invoicing.App.Views.MainWindow" x:DataType="vm:MainWindowViewModel" Title="Fakturace" Width="1120" Height="760"
+        MinWidth="840" MinHeight="570" WindowStartupLocation="CenterScreen">
+
+  <TabControl Margin="20">
+    <TabItem Header="Dodavatel"><views:SupplierView DataContext="{Binding Supplier}" /></TabItem>
+    <TabItem Header="Adresář"><views:CustomersView DataContext="{Binding Customers}" /></TabItem>
+    <TabItem Header="Doklady"><views:DocumentsView DataContext="{Binding Documents}" /></TabItem>
+  </TabControl>
+</Window>

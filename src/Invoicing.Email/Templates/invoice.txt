@@ -1,0 +1,14 @@
+Dobrý den,
+
+v příloze Vám zasíláme fakturu č. {{DocumentNumber}} pro {{CustomerName}}.
+
+Částka k úhradě: {{TotalAmount}}
+Datum splatnosti: {{DueDate}}
+Číslo účtu: {{BankAccount}}
+Variabilní symbol: {{VariableSymbol}}
+
+Děkujeme za včasnou úhradu.
+
+S pozdravem
+{{IssuedBy}}
+{{SupplierName}}

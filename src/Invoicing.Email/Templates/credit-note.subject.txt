@@ -1,0 +1,1 @@
+Opravný daňový doklad {{DocumentNumber}} – {{SupplierName}}

@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="../Invoicing.Core/Invoicing.Core.csproj" />
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="11.0.0" />
+    <PackageReference Include="Dapper" Version="2.1.100" />
+  </ItemGroup>
+</Project>

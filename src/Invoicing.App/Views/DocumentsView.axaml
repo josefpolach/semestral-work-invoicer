@@ -1,0 +1,27 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Invoicing.App.ViewModels"
+        xmlns:views="using:Invoicing.App.Views"
+        x:Class="Invoicing.App.Views.DocumentsView" x:DataType="vm:DocumentsViewModel" >
+
+  <Grid RowDefinitions="Auto,*" RowSpacing="14" Margin="12,22">
+    <WrapPanel>
+      <ComboBox Width="160" Margin="0,0,12,0" ItemsSource="{Binding Filters}" SelectedIndex="{Binding FilterIndex}" />
+      <Button Classes="accent" Content="Nový doklad" Command="{Binding NewDocumentCommand}" Margin="0,0,8,0"
+              ToolTip.Tip="{Binding NewToolTip}" ToolTip.ShowOnDisabled="True" />
+      <Button Content="Otevřít" Command="{Binding OpenCommand}" />
+    </WrapPanel>
+    <DataGrid Grid.Row="1" ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}"
+              AutoGenerateColumns="False" IsReadOnly="True">
+      <DataGrid.Columns>
+        <DataGridTextColumn Header="Číslo" Width="130" Binding="{Binding Number, DataType=vm:DocumentListItemViewModel}" />
+        <DataGridTextColumn Header="Typ" Width="2*" Binding="{Binding Kind, DataType=vm:DocumentListItemViewModel}" />
+        <DataGridTextColumn Header="Odběratel" Width="2*" Binding="{Binding Customer, DataType=vm:DocumentListItemViewModel}" />
+        <DataGridTextColumn Header="Vystaveno" Width="116" Binding="{Binding IssueDate, DataType=vm:DocumentListItemViewModel}" />
+        <DataGridTextColumn Header="Splatnost" Width="116" Binding="{Binding DueDate, DataType=vm:DocumentListItemViewModel}" />
+        <DataGridTextColumn Header="Částka" Width="120" Binding="{Binding Total, DataType=vm:DocumentListItemViewModel}" />
+        <DataGridTextColumn Header="Stav" Width="120" Binding="{Binding Status, DataType=vm:DocumentListItemViewModel}" />
+      </DataGrid.Columns>
+    </DataGrid>
+  </Grid>
+</UserControl>

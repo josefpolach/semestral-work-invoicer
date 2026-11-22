@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head><meta charset="utf-8"><title>Faktura</title></head>
+<body>
+<p>Dobrý den,</p>
+<p>v příloze Vám zasíláme fakturu č. {{DocumentNumber}} pro {{CustomerName}}.</p>
+<table>
+  <tr><th scope="row">Částka k úhradě</th><td>{{TotalAmount}}</td></tr>
+  <tr><th scope="row">Datum splatnosti</th><td>{{DueDate}}</td></tr>
+  <tr><th scope="row">Číslo účtu</th><td>{{BankAccount}}</td></tr>
+  <tr><th scope="row">Variabilní symbol</th><td>{{VariableSymbol}}</td></tr>
+</table>
+<p>Děkujeme za včasnou úhradu.</p>
+<p>S pozdravem<br>{{IssuedBy}}<br>{{SupplierName}}</p>
+</body>
+</html>

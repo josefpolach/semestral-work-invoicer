@@ -1,0 +1,30 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Invoicing.App.ViewModels"
+        xmlns:views="using:Invoicing.App.Views"
+        x:Class="Invoicing.App.Views.SendEmailWindow" x:DataType="vm:SendEmailViewModel" Title="Odeslat e-mailem" Width="670" Height="650" MinWidth="470"
+        MinHeight="480" WindowStartupLocation="CenterOwner">
+
+  <Grid Margin="22" RowDefinitions="*,Auto" RowSpacing="14">
+    <ScrollViewer>
+      <StackPanel Spacing="10">
+        <TextBlock Classes="heading" Text="Odeslat e-mailem" />
+        <TextBlock Classes="message" Text="{Binding PreviouslySent}" />
+        <TextBlock Text="Komu:" />
+        <TextBox Text="{Binding Recipient}" IsReadOnly="{Binding IsRecipientReadOnly}" />
+        <TextBlock Classes="message" Text="{Binding RecipientError}" />
+        <TextBlock Text="Předmět:" />
+        <TextBox Text="{Binding Subject, Mode=OneWay}" IsReadOnly="True" />
+        <TextBlock Text="Text:" />
+        <TextBox Text="{Binding Body, Mode=OneWay}" TextWrapping="Wrap" AcceptsReturn="True" IsReadOnly="True" />
+        <TextBlock Text="{Binding Attachment, StringFormat='Příloha: {0}'}" />
+        <TextBlock Classes="message" Text="{Binding Error}" />
+        <ProgressBar IsVisible="{Binding IsSending}" IsIndeterminate="True" />
+      </StackPanel>
+    </ScrollViewer>
+    <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+      <Button Content="Zrušit" Command="{Binding CancelCommand}" />
+      <Button Classes="accent" Content="Odeslat" Command="{Binding SendCommand}" />
+    </StackPanel>
+  </Grid>
+</Window>

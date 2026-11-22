@@ -1,0 +1,66 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Invoicing.App.ViewModels"
+        xmlns:views="using:Invoicing.App.Views"
+        x:Class="Invoicing.App.Views.CustomersView" x:DataType="vm:CustomersViewModel" xmlns:party="using:Invoicing.Core.Parties">
+
+  <Grid ColumnDefinitions="*,380" ColumnSpacing="24" Margin="12,22">
+    <Grid RowDefinitions="Auto,*" RowSpacing="12">
+      <TextBox PlaceholderText="Hledat podle názvu, IČO nebo obce" Text="{Binding Search}" />
+      <DataGrid Grid.Row="1" ItemsSource="{Binding Items}" SelectedItem="{Binding Selected}"
+                AutoGenerateColumns="False" IsReadOnly="True">
+        <DataGrid.Columns>
+        <DataGridTextColumn Header="Název" Width="2*" Binding="{Binding Name, DataType=party:Customer}" />
+        <DataGridTextColumn Header="IČO" Width="Auto" Binding="{Binding Ico, DataType=party:Customer}" />
+        <DataGridTextColumn Header="Obec" Width="*" Binding="{Binding City, DataType=party:Customer}" />
+        <DataGridTextColumn Header="E-mail" Width="*" Binding="{Binding Email, DataType=party:Customer}" />
+        </DataGrid.Columns>
+      </DataGrid>
+    </Grid>
+    <ScrollViewer Grid.Column="1">
+      <StackPanel Spacing="12">
+        <TextBlock Classes="section" Text="Údaje odběratele" />
+        <UniformGrid Columns="2" ColumnSpacing="12" RowSpacing="10">
+      <StackPanel Spacing="4">
+        <TextBlock Text="Název" />
+        <TextBox Text="{Binding Editor.Form.Name}" />
+      </StackPanel>
+      <StackPanel Spacing="4">
+        <TextBlock Text="IČO" />
+        <TextBox Text="{Binding Editor.Form.Ico}" />
+      </StackPanel>
+      <StackPanel Spacing="4">
+        <TextBlock Text="Ulice" />
+        <TextBox Text="{Binding Editor.Form.Street}" />
+      </StackPanel>
+      <StackPanel Spacing="4">
+        <TextBlock Text="DIČ" />
+        <TextBox Text="{Binding Editor.Form.Dic}" />
+      </StackPanel>
+      <StackPanel Spacing="4">
+        <TextBlock Text="Obec" />
+        <TextBox Text="{Binding Editor.Form.City}" />
+      </StackPanel>
+      <StackPanel Spacing="4">
+        <TextBlock Text="PSČ" />
+        <TextBox Text="{Binding Editor.Form.PostalCode}" />
+      </StackPanel>
+        </UniformGrid>
+      <StackPanel Spacing="4">
+        <TextBlock Text="E-mail" />
+        <TextBox Text="{Binding Editor.Email}" />
+      </StackPanel>
+        <WrapPanel>
+          <Button Content="Nový" Command="{Binding NewCommand}" Margin="0,0,8,8" />
+          <Button Content="Načíst z ARES" Command="{Binding LoadCompanyCommand}" Margin="0,0,8,8" />
+          <Button Classes="accent" Content="Uložit" Command="{Binding SaveCommand}" Margin="0,0,0,8" />
+        </WrapPanel>
+      <ItemsControl ItemsSource="{Binding Editor.Messages}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="x:String"><TextBlock Classes="message" Text="{Binding .}" /></DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+      </StackPanel>
+    </ScrollViewer>
+  </Grid>
+</UserControl>

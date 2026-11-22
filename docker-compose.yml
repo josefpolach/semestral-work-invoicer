@@ -1,0 +1,26 @@
+# Database migrations only. The application itself runs on the host.
+services:
+  flyway:
+    image: flyway/flyway:13.13.0
+    user: "${UID:-1000}:${GID:-1000}"     # the created .db file must belong to the host user
+    volumes:
+      - ./db/migrations:/flyway/sql:ro
+      - ${DATA_DIR:-./data}:/flyway/db
+    command: >
+      -url=jdbc:sqlite:/flyway/db/invoicing.db
+      -locations=filesystem:/flyway/sql
+      -ignoreMigrationPatterns=repeatable:missing
+      migrate
+
+  flyway-demo:
+    image: flyway/flyway:13.13.0
+    profiles: ["demo"]
+    user: "${UID:-1000}:${GID:-1000}"
+    volumes:
+      - ./db/migrations:/flyway/sql:ro
+      - ./db/demo:/flyway/demo:ro
+      - ${DATA_DIR:-./data}:/flyway/db
+    command: >
+      -url=jdbc:sqlite:/flyway/db/invoicing.db
+      -locations=filesystem:/flyway/sql,filesystem:/flyway/demo
+      migrate

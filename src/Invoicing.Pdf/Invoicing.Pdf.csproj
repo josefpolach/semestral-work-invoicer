@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="../Invoicing.Core/Invoicing.Core.csproj" />
+    <PackageReference Include="QuestPDF" Version="2026.9.2" />
+    <PackageReference Include="QRCoder" Version="1.9.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources/Fonts/*" />
+  </ItemGroup>
+</Project>
