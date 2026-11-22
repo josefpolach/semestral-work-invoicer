@@ -13,6 +13,8 @@ public class NonVatInvoice(DocumentHeader header, IEnumerable<InvoiceLine> lines
     public override bool CanCancel => Status == DocumentStatus.Issued;
     public override decimal CalculateTotal() => CalculateTotalBase();
 
+    protected override InvoiceLine PrepareLine(InvoiceLine line) => line.WithoutVat();
+
     public override IReadOnlyList<ValidationMessage> Validate(Supplier? supplier, VatRates vatRates) =>
-        ValidateCommon(supplier, null, false);
+        ValidateCommon(supplier, rates: null, needsVatPayer: false, allowNegativeQuantity: false);
 }

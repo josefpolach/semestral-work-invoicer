@@ -30,10 +30,12 @@ public class DocumentPdfGeneratorTests
         Assert.Throws<InvalidOperationException>(() => new DocumentPdfGenerator().Generate(TestData.Invoice()));
 
     [Fact]
-    public void CreatePng_PaymentText_ProducesPng()
+    public void Generate_InvoiceAboveQrAmountLimit_StillProducesPdf()
     {
-        var bytes = new QrCodeImageGenerator().CreatePng("SPD*1.0*AM:100.00*");
-        Assert.Equal((byte)0x89, bytes[0]);
-        Assert.True(bytes.AsSpan(1).StartsWith("PNG"u8));
+        var document = new NonVatInvoice(TestData.Header(), [new("Sale", 1, "pc", 10_000_000m, 0, 0)]);
+        document.Issue("2026-0001", TestData.Supplier(false));
+
+        var bytes = new DocumentPdfGenerator().Generate(document);
+        Assert.True(bytes.AsSpan().StartsWith("%PDF"u8));
     }
 }

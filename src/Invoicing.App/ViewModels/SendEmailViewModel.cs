@@ -28,7 +28,7 @@ public partial class SendEmailViewModel : ObservableObject
         _message = message;
         _service = service;
         _recipient = message.ToAddress;
-        PreviouslySent = latest is null ? null : $"Tento doklad už byl odeslán {EmailTexts.FormatDate(latest)} na {latest.SentTo}.";
+        PreviouslySent = latest is null ? null : EmailTexts.PreviouslySent(latest);
     }
 
     public event Action<bool>? CloseRequested;
@@ -37,7 +37,7 @@ public partial class SendEmailViewModel : ObservableObject
     public string Attachment => _message.Attachment.FileName;
     public string? PreviouslySent { get; }
     public bool IsRecipientReadOnly => IsSending || RecipientLocked;
-    public string? RecipientError => EmailAddressValidator.IsValid(Recipient) ? null : "Zadejte platnou e-mailovou adresu.";
+    public string? RecipientError => EmailAddressValidator.IsValid(Recipient) ? null : EmailTexts.InvalidRecipient;
 
     partial void OnRecipientChanged(string? value)
     {
@@ -68,21 +68,23 @@ public partial class SendEmailViewModel : ObservableObject
             return;
         }
 
+        if (await SendWithProgressAsync(recipient.Trim()))
+        {
+            CloseRequested?.Invoke(true);
+        }
+    }
+
+    private async Task<bool> SendWithProgressAsync(string recipient)
+    {
         IsSending = true;
         Error = null;
-        var sent = false;
         try
         {
-            sent = await TrySendAsync(recipient.Trim());
+            return await TrySendAsync(recipient);
         }
         finally
         {
             IsSending = false;
-        }
-
-        if (sent)
-        {
-            CloseRequested?.Invoke(true);
         }
     }
 
@@ -101,7 +103,7 @@ public partial class SendEmailViewModel : ObservableObject
         catch (SqliteException)
         {
             RecipientLocked = true;
-            Error = "Potvrzení o odeslání se nepodařilo uložit. Zkuste odeslání znovu v tomto okně.";
+            Error = EmailTexts.ReceiptSaveFailed;
             return false;
         }
     }

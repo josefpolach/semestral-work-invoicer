@@ -11,7 +11,7 @@
         <TextBlock Classes="heading" Text="{Binding Title}" />
         <TextBlock Text="{Binding Status}" />
         <TextBlock Classes="section" Text="Odběratel" />
-        <ComboBox ItemsSource="{Binding Customers}" SelectedItem="{Binding SelectedCustomer}"
+        <ComboBox ItemsSource="{Binding Editor.Customers}" SelectedItem="{Binding Editor.SelectedCustomer}"
                   IsVisible="{Binding CanSelectCustomer}" MinWidth="250">
           <ComboBox.ItemTemplate>
             <DataTemplate x:DataType="party:Customer"><TextBlock Text="{Binding Name}" /></DataTemplate>
@@ -21,24 +21,24 @@
         <WrapPanel ItemSpacing="16">
         <StackPanel Spacing="4">
           <TextBlock Text="Datum vystavení" />
-          <CalendarDatePicker SelectedDate="{Binding IssueDate}" IsEnabled="{Binding IsEditable}" />
+          <CalendarDatePicker SelectedDate="{Binding Editor.IssueDate}" IsEnabled="{Binding IsEditable}" />
         </StackPanel>
         <StackPanel Spacing="4" IsVisible="{Binding HasVat}">
           <TextBlock Text="Datum uskutečnění zdanitelného plnění (DUZP)" />
-          <CalendarDatePicker SelectedDate="{Binding SupplyDate}" IsEnabled="{Binding IsEditable}" />
+          <CalendarDatePicker SelectedDate="{Binding Editor.SupplyDate}" IsEnabled="{Binding IsEditable}" />
         </StackPanel>
         <StackPanel Spacing="4">
           <TextBlock Text="Datum splatnosti" />
-          <CalendarDatePicker SelectedDate="{Binding DueDate}" IsEnabled="{Binding IsEditable}" />
+          <CalendarDatePicker SelectedDate="{Binding Editor.DueDate}" IsEnabled="{Binding IsEditable}" />
         </StackPanel>
         </WrapPanel>
         <StackPanel IsVisible="{Binding IsCreditNote}" Spacing="4">
           <TextBlock Text="{Binding OriginalNumber, StringFormat='Opravovaný doklad: {0}'}" />
           <TextBlock Text="Důvod opravy" />
-          <TextBox Text="{Binding CorrectionReason}" IsReadOnly="{Binding !IsEditable}" />
+          <TextBox Text="{Binding Editor.CorrectionReason}" IsReadOnly="{Binding !IsEditable}" />
         </StackPanel>
         <TextBlock Classes="section" Text="Položky" />
-      <DataGrid ItemsSource="{Binding Lines}" SelectedItem="{Binding SelectedLine}"
+      <DataGrid ItemsSource="{Binding LinesEditor.Items}" SelectedItem="{Binding LinesEditor.SelectedLine}"
                 IsReadOnly="{Binding !IsEditable}"
                 MinHeight="145" MaxHeight="420" AutoGenerateColumns="False">
         <DataGrid.Columns>
@@ -120,8 +120,8 @@
         </DataGrid.Columns>
       </DataGrid>
         <WrapPanel ItemSpacing="8">
-          <Button Content="Přidat řádek" Command="{Binding AddLineCommand}" />
-          <Button Content="Odebrat řádek" Command="{Binding RemoveLineCommand}" />
+          <Button Content="Přidat řádek" Command="{Binding LinesEditor.AddLineCommand}" />
+          <Button Content="Odebrat řádek" Command="{Binding LinesEditor.RemoveLineCommand}" />
         </WrapPanel>
         <StackPanel HorizontalAlignment="Right" Spacing="5">
           <TextBlock Text="{Binding Base, StringFormat='Základ celkem: {0}'}" />

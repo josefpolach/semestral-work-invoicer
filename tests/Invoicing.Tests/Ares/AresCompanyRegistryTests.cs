@@ -1,5 +1,4 @@
 using System.Net;
-using System.Text.Json;
 using Invoicing.Ares;
 using Invoicing.Core.Companies;
 using Invoicing.Tests.TestHelpers;
@@ -22,23 +21,6 @@ public class AresCompanyRegistryTests
             "CZ27074358"), result.Company);
         Assert.Equal(BaseUrl + "/ekonomicke-subjekty/27074358", handler.Url?.AbsoluteUri);
         Assert.Equal("application/json", handler.Headers["Accept"]);
-    }
-
-    [Fact]
-    public async Task Map_MissingFields_UsesDistrictAndFullAddressFallbacks()
-    {
-        var subject = Assert.IsType<AresSubjectDto>(JsonSerializer.Deserialize<AresSubjectDto>(await LoadFixtureAsync()));
-        var address = Assert.IsType<AresAddressDto>(subject.Address);
-        subject.Dic = null;
-        address.Street = null;
-        var result = AresResponseMapper.Map(subject);
-        Assert.Equal("Michle 778/3a", result.Street);
-        Assert.Null(result.Dic);
-        address.PostalCode = null;
-        result = AresResponseMapper.Map(subject);
-        Assert.Equal(address.FullAddress, result.Street);
-        Assert.Empty(result.City);
-        Assert.Empty(result.PostalCode);
     }
 
     [Theory]

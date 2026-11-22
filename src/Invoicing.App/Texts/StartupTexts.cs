@@ -5,7 +5,11 @@ namespace Invoicing.App.Texts;
 
 internal static class StartupTexts
 {
-    public const string Title = "Aplikaci nelze spustit";
+    public const string EnvReadFailed = "Soubor .env se nepodařilo přečíst.";
+    public const string AccessDenied = "K souboru .env nebo k databázi chybí oprávnění.";
+    public const string DatabaseOpenFailed = "Databázi se nepodařilo otevřít.";
+
+    public static string InvalidLine(int lineNumber) => $"Soubor .env obsahuje neplatný řádek {lineNumber}.";
     public const string ConfigurationHelp = "Upravte soubor .env ve složce aplikace a spusťte aplikaci znovu.";
     public const string DatabaseHelp = "Spusťte migrace v kořenové složce projektu: docker compose run --rm flyway";
 

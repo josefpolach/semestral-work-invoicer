@@ -1743,6 +1743,15 @@ Send errors:
 - `Nejdříve vyplňte údaje dodavatele.`
 - `PDF bylo uloženo.`
 - `Neplatné číslo účtu`, `Neplatné číslo`
+- `PDF se nepodařilo uložit.`
+- `Do vybraného souboru nelze zapisovat.`
+- `Soubor .env se nepodařilo přečíst.`
+- `K souboru .env nebo k databázi chybí oprávnění.`
+- `Databázi se nepodařilo otevřít.`
+- `Operaci se nepodařilo uložit do databáze. Zkuste to znovu.`
+- `Doklad již v databázi není.`
+- `Potvrzení o odeslání se nepodařilo uložit. Zkuste odeslání znovu v tomto okně.`
+- `Údaje dodavatele byly uloženy.`
 - PDF texts: section 12.3.
 
 ---
@@ -1830,3 +1839,6 @@ These were not spelled out in the spec and were decided for this file. If the us
 10. Customers cannot be deleted.
 11. `CreditNote.OriginalInvoice` is a small `DocumentReference(Id, Number)` instead of a full invoice object.
 12. Validation results use `ValidationMessage` (code + target + severity) so that warnings and errors share one type.
+
+13. A credit-note draft uses the original invoice's customer snapshot when reopened. Ordinary invoice drafts use current address-book details.
+14. A cancelled invoice PDF omits QR Platba so it does not invite payment.

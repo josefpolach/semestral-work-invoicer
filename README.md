@@ -84,11 +84,13 @@ Avalonia runs on Linux, Windows and macOS with shared XAML and MVVM patterns fam
 
 ## Why Dapper
 
-EF Core is Microsoft's ORM. It maps entities, translates LINQ to SQL, and supports its own migrations. This app uses Dapper so the few SQL queries are visible and decimal conversions remain explicit. Flyway owns migrations.
+EF Core is Microsoft's ORM. It maps entities, translates LINQ to SQL, and supports its own migrations. This app uses Dapper to keep SQL visible and explicitly convert decimal amounts stored as SQLite `TEXT`. Flyway owns the schema. Running both Flyway and EF Core migrations would give two tools control of the same schema and could lead to conflicting updates.
 
 ## Database and Flyway
 
-SQLite stores the supplier, customers, documents, lines, yearly numbering and accepted e-mail records. Money is stored as invariant decimal text and dates use ISO date text. Flyway applies versioned schema migrations and the optional repeatable demo migration. At startup the app checks for schema version 5. Invoices take their next number in the same transaction that writes their snapshot and lines.
+SQLite uses the `supplier`, `customers`, `documents`, `document_lines`, `number_series`, and `document_emails` tables. Money is stored as invariant decimal text and dates use ISO date text. Flyway records migrations in `flyway_schema_history`. Versioned scripts run once in version order. The optional repeatable demo script runs again if its checksum changes. The desktop app checks for schema version 5 at startup so schema changes remain under Flyway's control and happen during explicit setup or upgrades. Invoices take their next number in the same transaction that writes their snapshot and lines.
+
+Credit notes copy rates from the original invoice. Issuance still requires every rate to be in the current configuration, so an invoice with a historical rate may be blocked after a rate change.
 
 ## PostgreSQL extension
 

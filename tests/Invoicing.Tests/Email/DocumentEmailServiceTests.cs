@@ -11,7 +11,7 @@ public class DocumentEmailServiceTests
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
-    public async Task SendAsync_RecordsOnlySuccessfulAcceptance(bool successful)
+    public async Task SendAsync_ProviderResult_RecordsOnlySuccess(bool successful)
     {
         var sender = new FakeSender(successful);
         var repository = new EmailRepository();

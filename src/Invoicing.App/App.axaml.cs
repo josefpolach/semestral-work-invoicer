@@ -5,6 +5,7 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.Input;
+using Invoicing.App.Services;
 using Invoicing.App.Startup;
 using Invoicing.App.Texts;
 using Invoicing.App.ViewModels;
@@ -35,6 +36,7 @@ public partial class App : Application
                 args.Handled = true;
             };
             AppDomain.CurrentDomain.UnhandledException += (_, args) => Console.Error.WriteLine(args.ExceptionObject);
+            // The command forwards unexpected startup errors to the dispatcher handler.
             var startup = new AsyncRelayCommand(() => StartAsync(desktop));
             Dispatcher.UIThread.Post(() => startup.Execute(null));
         }
@@ -46,32 +48,36 @@ public partial class App : Application
     {
         try
         {
-            var result = await EnvironmentReader.LoadAsync();
-            if (result.Settings is AppSettings settings)
-            {
-                await OpenMainAsync(desktop, settings);
-            }
-            else
-            {
-                ShowError(desktop, result.Errors.Select(StartupTexts.Configuration), StartupTexts.ConfigurationHelp);
-            }
+            await LoadSettingsAndOpenAsync(desktop);
         }
         catch (EnvFileFormatException error)
         {
-            ShowError(desktop, [$"Soubor .env obsahuje neplatný řádek {error.LineNumber}."], StartupTexts.ConfigurationHelp);
+            ShowError(desktop, [StartupTexts.InvalidLine(error.LineNumber)], StartupTexts.ConfigurationHelp);
         }
         catch (IOException)
         {
-            ShowError(desktop, ["Soubor .env se nepodařilo přečíst."], StartupTexts.ConfigurationHelp);
+            ShowError(desktop, [StartupTexts.EnvReadFailed], StartupTexts.ConfigurationHelp);
         }
         catch (UnauthorizedAccessException)
         {
-            ShowError(desktop, ["K souboru .env nebo k databázi chybí oprávnění."], StartupTexts.ConfigurationHelp);
+            ShowError(desktop, [StartupTexts.AccessDenied], StartupTexts.ConfigurationHelp);
         }
         catch (SqliteException)
         {
-            ShowError(desktop, ["Databázi se nepodařilo otevřít."], StartupTexts.DatabaseHelp);
+            ShowError(desktop, [StartupTexts.DatabaseOpenFailed], StartupTexts.DatabaseHelp);
         }
+    }
+
+    private static async Task LoadSettingsAndOpenAsync(IClassicDesktopStyleApplicationLifetime desktop)
+    {
+        var result = await EnvironmentReader.LoadAsync();
+        if (result.Settings is AppSettings settings)
+        {
+            await OpenMainAsync(desktop, settings);
+            return;
+        }
+
+        ShowError(desktop, result.Errors.Select(StartupTexts.Configuration), StartupTexts.ConfigurationHelp);
     }
 
     private static async Task OpenMainAsync(IClassicDesktopStyleApplicationLifetime desktop, AppSettings settings)
@@ -84,6 +90,11 @@ public partial class App : Application
             return;
         }
 
+        await ShowMainAsync(desktop, settings, database);
+    }
+
+    private static async Task ShowMainAsync(IClassicDesktopStyleApplicationLifetime desktop, AppSettings settings, string database)
+    {
         PdfSetup.Initialize();
         var root = new CompositionRoot(settings, database);
         var window = await root.CreateMainAsync();
@@ -98,7 +109,9 @@ public partial class App : Application
 
     private static void ShowError(IClassicDesktopStyleApplicationLifetime desktop, IEnumerable<string> errors, string help)
     {
-        var window = new ErrorWindow { DataContext = new ErrorViewModel(string.Join(Environment.NewLine, errors), help) };
+        var model = new ErrorViewModel(string.Join(Environment.NewLine, errors), help);
+        var window = new ErrorWindow { DataContext = model };
+        model.CloseRequested += window.Close;
         desktop.MainWindow = window;
         window.Closed += (_, _) => desktop.Shutdown(1);
         window.Show();
@@ -107,12 +120,14 @@ public partial class App : Application
     private static void ShowUnexpectedError(Exception error)
     {
         Console.Error.WriteLine(error);
-        var window = new MessageWindow
+        var window = DialogService.CreateMessageWindow(UiTexts.UnexpectedError(error.Message), confirm: false);
+        var desktop = Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime;
+        if (desktop is not null && desktop.MainWindow is null)
         {
-            DataContext = new MessageViewModel($"Nastala neočekávaná chyba: {error.Message}", false)
-        };
-        var owner = (Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime)?.Windows
-            .LastOrDefault(candidate => candidate.IsActive);
+            window.Closed += (_, _) => desktop.Shutdown(1);
+        }
+
+        var owner = desktop?.Windows.LastOrDefault(candidate => candidate.IsActive);
         if (owner is null)
         {
             window.Show();

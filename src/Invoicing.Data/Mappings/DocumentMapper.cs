@@ -30,24 +30,27 @@ internal static class DocumentMapper
     public static DocumentRow Write(Document document)
     {
         var customer = document.Customer ?? throw new InvalidOperationException("A customer must be selected.");
-        var row = new DocumentRow
-        {
-            Id = document.Id,
-            CustomerId = customer.Id,
-            DocumentType = document.Kind.ToString(),
-            Status = document.Status.ToString(),
-            Number = document.Number,
-            IssueDate = Format(document.IssueDate),
-            DueDate = Format(document.DueDate)
-        };
+        var row = WriteHeader(document, customer.Id);
         WriteSupplyAndCorrection(document, row);
         if (!document.IsEditable)
         {
-            WriteParties(row, customer, document.Supplier);
+            WriteCustomer(row, customer);
+            WriteSupplier(row, document.Supplier);
         }
 
         return row;
     }
+
+    private static DocumentRow WriteHeader(Document document, int customerId) => new()
+    {
+        Id = document.Id,
+        CustomerId = customerId,
+        DocumentType = document.Kind.ToString(),
+        Status = document.Status.ToString(),
+        Number = document.Number,
+        IssueDate = Format(document.IssueDate),
+        DueDate = Format(document.DueDate)
+    };
 
     private static DocumentHeader ReadHeader(DocumentRow row, DocumentKind kind) => new()
     {
@@ -74,6 +77,7 @@ internal static class DocumentMapper
 
     private static Supplier? ReadSupplier(DocumentRow row, DocumentKind kind) => row.SupplierName is null ? null : new()
     {
+        // The snapshot has no VAT payer flag, so recover it from the issued document kind.
         IsVatPayer = kind != DocumentKind.NonVatInvoice,
         Name = row.SupplierName,
         Street = row.SupplierStreet ?? string.Empty,
@@ -101,7 +105,7 @@ internal static class DocumentMapper
         }
     }
 
-    private static void WriteParties(DocumentRow row, Customer customer, Supplier? supplier)
+    private static void WriteCustomer(DocumentRow row, Customer customer)
     {
         row.CustomerName = customer.Name;
         row.CustomerStreet = customer.Street;
@@ -110,6 +114,10 @@ internal static class DocumentMapper
         row.CustomerIco = customer.Ico;
         row.CustomerDic = customer.Dic;
         row.CustomerEmail = customer.Email;
+    }
+
+    private static void WriteSupplier(DocumentRow row, Supplier? supplier)
+    {
         row.SupplierName = supplier?.Name;
         row.SupplierStreet = supplier?.Street;
         row.SupplierCity = supplier?.City;

@@ -26,6 +26,15 @@ internal class VatSummaryComponent(BillingDocument document) : IComponent
 
     private static void AddTable(TableDescriptor table, VatSummary summary)
     {
+        DefineColumnsAndHeader(table);
+        foreach (var row in summary.Rows)
+        {
+            AddRow(table, row);
+        }
+    }
+
+    private static void DefineColumnsAndHeader(TableDescriptor table)
+    {
         string[] labels = [PdfTexts.Rate, PdfTexts.TaxBase, PdfTexts.Vat, PdfTexts.Total];
         table.ColumnsDefinition(columns =>
         {
@@ -38,15 +47,16 @@ internal class VatSummaryComponent(BillingDocument document) : IComponent
         {
             foreach (var label in labels)
             {
-                header.Cell().BorderBottom(1).Padding(3).Text(label).Bold();
+                header.Cell().BorderBottom(PdfTableStyle.HeaderBorder).Padding(PdfTableStyle.CellPadding).Text(label).Bold();
             }
         });
-        foreach (var row in summary.Rows)
-        {
-            table.Cell().Padding(3).Text(CzechFormat.FormatQuantity(row.VatRate) + " %");
-            table.Cell().Padding(3).Text(CzechFormat.FormatMoney(row.TaxBase));
-            table.Cell().Padding(3).Text(CzechFormat.FormatMoney(row.VatAmount));
-            table.Cell().Padding(3).Text(CzechFormat.FormatMoney(row.Total));
-        }
+    }
+
+    private static void AddRow(TableDescriptor table, VatSummaryRow row)
+    {
+        table.Cell().Padding(PdfTableStyle.CellPadding).Text(CzechFormat.FormatQuantity(row.VatRate) + " %");
+        table.Cell().Padding(PdfTableStyle.CellPadding).Text(CzechFormat.FormatMoney(row.TaxBase));
+        table.Cell().Padding(PdfTableStyle.CellPadding).Text(CzechFormat.FormatMoney(row.VatAmount));
+        table.Cell().Padding(PdfTableStyle.CellPadding).Text(CzechFormat.FormatMoney(row.Total));
     }
 }

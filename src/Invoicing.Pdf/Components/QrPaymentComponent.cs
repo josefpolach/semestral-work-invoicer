@@ -19,16 +19,21 @@ internal class QrPaymentComponent(BillingDocument document) : IComponent
             return;
         }
 
-        var number = document.Number ?? throw new InvalidOperationException("Missing document number.");
-        var iban = document.Supplier?.Iban ?? throw new InvalidOperationException("Missing IBAN.");
-        var due = document.DueDate ?? throw new InvalidOperationException("Missing due date.");
-        var payment = new SpaydPayment(iban, amount, DocumentNumbering.ToVariableSymbol(number), due,
-            $"{PdfTexts.Invoice} {number}");
-        var png = new QrCodeImageGenerator().CreatePng(payment.ToText());
+        var png = CreateImage(amount);
         container.Column(column =>
         {
             column.Item().Text(PdfTexts.QrPayment).Bold();
             column.Item().Width(WidthInCentimeters, Unit.Centimetre).Image(png);
         });
+    }
+
+    private byte[] CreateImage(decimal amount)
+    {
+        var number = document.Number ?? throw new InvalidOperationException("Missing document number.");
+        var iban = document.Supplier?.Iban ?? throw new InvalidOperationException("Missing IBAN.");
+        var due = document.DueDate ?? throw new InvalidOperationException("Missing due date.");
+        var payment = new SpaydPayment(iban, amount, DocumentNumbering.ToVariableSymbol(number), due,
+            $"{PdfTexts.Invoice} {number}");
+        return new QrCodeImageGenerator().CreatePng(payment.ToText());
     }
 }

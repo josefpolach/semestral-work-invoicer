@@ -11,11 +11,23 @@ public class EmailAvailability
     public bool CanSend => Reason is null;
     public EmailUnavailableReason? Reason { get; }
 
-    public static EmailAvailability Evaluate(EmailSettings settings, Document document) => new(
-        !settings.IsEnabled ? EmailUnavailableReason.NotConfigured : document.Status switch
+    public static EmailAvailability Evaluate(EmailSettings settings, Document document)
+    {
+        if (!settings.IsEnabled)
         {
-            DocumentStatus.Draft => EmailUnavailableReason.DocumentIsDraft,
-            DocumentStatus.Cancelled => EmailUnavailableReason.DocumentIsCancelled,
-            _ => null
-        });
+            return new(EmailUnavailableReason.NotConfigured);
+        }
+
+        if (document.Status == DocumentStatus.Draft)
+        {
+            return new(EmailUnavailableReason.DocumentIsDraft);
+        }
+
+        if (document.Status == DocumentStatus.Cancelled)
+        {
+            return new(EmailUnavailableReason.DocumentIsCancelled);
+        }
+
+        return new(null);
+    }
 }

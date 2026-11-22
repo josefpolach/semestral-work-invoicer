@@ -1,4 +1,3 @@
-using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Invoicing.App.Services;
@@ -6,129 +5,212 @@ using Invoicing.App.Texts;
 using Invoicing.Core.Documents;
 using Invoicing.Core.Email;
 using Invoicing.Core.Formatting;
-using Invoicing.Core.Parties;
+using Invoicing.Core.Services;
+using Invoicing.Data;
+using Microsoft.Data.Sqlite;
 
 namespace Invoicing.App.ViewModels;
 
-/// <summary>Maintains a document form, its live totals and available actions.</summary>
+/// <summary>Coordinates document editing, totals and lifecycle actions.</summary>
 public partial class DocumentDetailViewModel : ObservableObject
 {
-    private readonly DocumentEditor _editor;
+    private readonly DocumentService _documents;
     private readonly DocumentDelivery _delivery;
     private readonly IDialogService _dialogs;
     private DocumentEmailRecord? _latestEmail;
-    private bool _loadingForm;
-    [ObservableProperty] private Customer? _selectedCustomer;
-    [ObservableProperty] private InvoiceLineViewModel? _selectedLine;
-    [ObservableProperty] private DateTime? _issueDate;
-    [ObservableProperty] private DateTime? _dueDate;
-    [ObservableProperty] private DateTime? _supplyDate;
-    [ObservableProperty] private string? _correctionReason;
     [ObservableProperty] private bool _isBusy;
     [ObservableProperty] private IReadOnlyList<string> _messages = [];
 
     internal DocumentDetailViewModel(DocumentEditor editor, DocumentDelivery delivery, IDialogService dialogs)
     {
-        _editor = editor;
+        Editor = editor;
+        _documents = editor.Workflow;
         _delivery = delivery;
         _dialogs = dialogs;
+        LinesEditor = new(editor.Rates, HasVat);
+        LinesEditor.Changed += ApplyLines;
+        Editor.DraftChanged += Refresh;
     }
 
     public event Action? CloseRequested;
-    private Document Document => _editor.Document;
+    public DocumentEditor Editor { get; }
+    public DocumentLinesViewModel LinesEditor { get; }
+    private Document Document => Editor.Document;
+    private static DateOnly Today => DateOnly.FromDateTime(DateTime.Today);
     public string Title => $"{DocumentTexts.Kind(Document.Kind)} · {Document.Number ?? DocumentTexts.Draft}";
-    public string Status => DocumentTexts.Status(Document, DateOnly.FromDateTime(DateTime.Today));
+    public string Status => DocumentTexts.Status(Document, Today);
     public bool IsEditable => Document.IsEditable && !IsBusy;
-    public string UnitPriceHeader => HasVat ? "Cena za jednotku bez DPH" : "Cena za jednotku";
+    public string UnitPriceHeader => DocumentTexts.UnitPriceHeader(HasVat);
     public bool HasVat => Document.Kind != DocumentKind.NonVatInvoice;
     public bool IsCreditNote => Document.Kind == DocumentKind.CreditNote;
     public bool CanSelectCustomer => IsEditable && !IsCreditNote;
     public string CustomerName => Document.Customer?.Name ?? string.Empty;
     public string? OriginalNumber => (Document as CreditNote)?.OriginalInvoice?.Number;
-    public IReadOnlyList<Customer> Customers => _editor.Customers;
-    public ObservableCollection<InvoiceLineViewModel> Lines { get; } = [];
-    public string Base => Lines.All(line => line.IsValid) ? CzechFormat.FormatMoney(Document.CalculateTotalBase()) : "—";
-    public string Total => Lines.All(line => line.IsValid) ? CzechFormat.FormatMoney(Document.CalculateTotal()) : "—";
-    public string? SentInfo => _latestEmail is null ? null : $"Odesláno {EmailTexts.FormatDate(_latestEmail)} na {_latestEmail.SentTo}";
-    public string? SendEmailToolTip => EmailTexts.Availability(EmailAvailability.Evaluate(_delivery.Settings, Document).Reason);
-    public IEnumerable<string> VatRows => GetVatRows().Select(row =>
-        $"{CzechFormat.FormatQuantity(row.VatRate)} % · Základ {CzechFormat.FormatMoney(row.TaxBase)} · DPH {CzechFormat.FormatMoney(row.VatAmount)}");
+    public string Base => LinesEditor.AreValid ? CzechFormat.FormatMoney(Document.CalculateTotalBase()) : DocumentTexts.UnavailableTotal;
+    public string Total => LinesEditor.AreValid ? CzechFormat.FormatMoney(Document.CalculateTotal()) : DocumentTexts.UnavailableTotal;
+    public string? SentInfo => _latestEmail is null ? null : EmailTexts.SentInfo(_latestEmail);
+    public string? SendEmailToolTip => EmailTexts.Availability(_delivery.GetAvailability(Document).Reason);
+    public IEnumerable<string> VatRows => GetVatRows().Select(DocumentTexts.VatRow);
 
     public async Task LoadAsync()
     {
-        await _editor.LoadAsync();
+        await Editor.LoadAsync();
         _latestEmail = await _delivery.GetLatestAsync(Document);
-        LoadForm();
+        LoadLines();
     }
 
-    private void LoadForm()
-    {
-        _loadingForm = true;
-        IssueDate = ToCalendar(Document.IssueDate);
-        DueDate = ToCalendar(Document.DueDate);
-        SupplyDate = ToCalendar(Document switch
-        {
-            TaxInvoice invoice => invoice.TaxableSupplyDate,
-            CreditNote credit => credit.TaxableSupplyDate,
-            _ => null
-        });
-        CorrectionReason = (Document as CreditNote)?.CorrectionReason;
-        SelectedCustomer = Customers.FirstOrDefault(customer => customer.Id == Document.Customer?.Id);
-        foreach (var line in Lines)
-        {
-            line.PropertyChanged -= HandleLineChanged;
-        }
-
-        Lines.Clear();
-        foreach (var line in Document.Lines)
-        {
-            AppendLine(line);
-        }
-
-        _loadingForm = false;
-        Refresh();
-    }
-
-    partial void OnIssueDateChanged(DateTime? value) => UpdateDraft();
-    partial void OnDueDateChanged(DateTime? value) => UpdateDraft();
-    partial void OnSupplyDateChanged(DateTime? value) => UpdateDraft();
-    partial void OnCorrectionReasonChanged(string? value) => UpdateDraft();
-    partial void OnSelectedCustomerChanged(Customer? value) => UpdateDraft();
-    partial void OnSelectedLineChanged(InvoiceLineViewModel? value) => RemoveLineCommand.NotifyCanExecuteChanged();
     partial void OnIsBusyChanged(bool value) => Refresh();
 
-    private void UpdateDraft()
+    private bool CanSave() => IsEditable && Document.Customer is not null && LinesEditor.AreValid;
+    private bool CanDelete() => IsEditable && Document.Id != 0;
+    private bool CanMarkPaid() => !IsBusy && Document.CanMarkAsPaid;
+    private bool CanCancelDocument() => !IsBusy && Document.CanCancel;
+    private bool CanCreateCreditNote() => !IsBusy && Document is TaxInvoice invoice && invoice.CanCreateCreditNote;
+    private bool CanExport() => !IsBusy && !Document.IsEditable;
+    private bool CanSendEmail() => !IsBusy && _delivery.GetAvailability(Document).CanSend;
+
+    [RelayCommand(CanExecute = nameof(CanSave))]
+    private Task SaveAsync() => RunDatabaseActionAsync(() => _documents.SaveDraftAsync(Document));
+
+    [RelayCommand(CanExecute = nameof(CanSave))]
+    private Task IssueAsync() => RunDatabaseActionAsync(IssueAfterConfirmationAsync);
+
+    [RelayCommand(CanExecute = nameof(CanMarkPaid))]
+    private Task MarkPaidAsync() => RunDatabaseActionAsync(() => _documents.MarkAsPaidAsync(Document));
+
+    [RelayCommand(CanExecute = nameof(CanDelete))]
+    private Task DeleteAsync() => RunDatabaseActionAsync(DeleteAfterConfirmationAsync);
+
+    [RelayCommand(CanExecute = nameof(CanCancelDocument))]
+    private Task CancelDocumentAsync() => RunDatabaseActionAsync(CancelAfterConfirmationAsync);
+
+    [RelayCommand(CanExecute = nameof(CanCreateCreditNote))]
+    private Task CreateCreditNoteAsync() => RunDatabaseActionAsync(OpenCorrectionAsync);
+
+    [RelayCommand(CanExecute = nameof(CanExport))]
+    private Task ExportAsync() => RunBusyActionAsync(() => _delivery.ExportAsync(Document, _dialogs));
+
+    [RelayCommand(CanExecute = nameof(CanSendEmail))]
+    private Task SendEmailAsync() => RunBusyActionAsync(SendAndRefreshAsync);
+
+    private async Task IssueAfterConfirmationAsync()
     {
-        if (_loadingForm || !IsEditable)
+        if (!await _dialogs.ConfirmAsync(UiTexts.ConfirmIssue))
         {
             return;
         }
 
-        Document.IssueDate = ToDomain(IssueDate);
-        Document.DueDate = ToDomain(DueDate);
-        if (!IsCreditNote)
+        var results = await _documents.IssueAsync(Document);
+        if (results.Count > 0)
         {
-            Document.Customer = SelectedCustomer;
+            await _dialogs.ShowMessageAsync(string.Join(Environment.NewLine, results.Select(ValidationTexts.Format)));
         }
+    }
 
+    private async Task DeleteAfterConfirmationAsync()
+    {
+        if (await _dialogs.ConfirmAsync(UiTexts.ConfirmDelete))
+        {
+            await _documents.DeleteDraftAsync(Document);
+            RequestClose();
+        }
+    }
+
+    private async Task CancelAfterConfirmationAsync()
+    {
+        if (await _dialogs.ConfirmAsync(UiTexts.ConfirmCancel))
+        {
+            await _documents.CancelAsync(Document);
+        }
+    }
+
+    private async Task OpenCorrectionAsync()
+    {
         if (Document is TaxInvoice invoice)
         {
-            invoice.TaxableSupplyDate = ToDomain(SupplyDate);
+            var correction = await _documents.CreateCreditNoteAsync(invoice, Today);
+            var detail = new DocumentDetailViewModel(Editor.ForDocument(correction), _delivery, _dialogs);
+            await detail.LoadAsync();
+            await _dialogs.ShowDocumentAsync(detail);
         }
-        else if (Document is CreditNote credit)
-        {
-            credit.TaxableSupplyDate = ToDomain(SupplyDate);
-            credit.CorrectionReason = CorrectionReason?.Trim() ?? string.Empty;
-        }
+    }
 
-        Document.ReplaceLines(Lines.Select(line => line.ToLine()));
+    private async Task SendAndRefreshAsync()
+    {
+        if (await _delivery.SendAsync(Document, _latestEmail, _dialogs))
+        {
+            _latestEmail = await _delivery.GetLatestAsync(Document);
+        }
+    }
+
+    private Task RunDatabaseActionAsync(Func<Task> action) => RunBusyActionAsync(async () =>
+    {
+        try
+        {
+            await action();
+        }
+        catch (SqliteException)
+        {
+            await RecoverDocumentAsync();
+        }
+        catch (DocumentStateChangedException)
+        {
+            await RecoverDocumentAsync();
+        }
+    });
+
+    private async Task RunBusyActionAsync(Func<Task> action)
+    {
+        IsBusy = true;
+        try
+        {
+            await action();
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    private async Task RecoverDocumentAsync()
+    {
+        var exists = await Editor.ReloadAsync();
+        await _dialogs.ShowMessageAsync(exists ? UiTexts.DatabaseWriteFailed : UiTexts.DocumentMissing);
+        if (exists)
+        {
+            LoadLines();
+        }
+        else
+        {
+            RequestClose();
+        }
+    }
+
+    private void RequestClose()
+    {
+        IsBusy = false;
+        CloseRequested?.Invoke();
+    }
+
+    private void LoadLines()
+    {
+        LinesEditor.Load(Document.Lines);
         Refresh();
+    }
+
+    private void ApplyLines()
+    {
+        if (IsEditable)
+        {
+            Document.ReplaceLines(LinesEditor.ReadLines());
+            Refresh();
+        }
     }
 
     private void Refresh()
     {
-        Messages = Document.IsEditable ? Document.Validate(_editor.Supplier, _editor.Rates)
-            .Select(ValidationTexts.Format).Concat(InputErrors()).ToList() : [];
+        Messages = Document.IsEditable ? Document.Validate(Editor.Supplier, Editor.Rates)
+            .Select(ValidationTexts.Format).Concat(LinesEditor.InputErrors()).ToList() : [];
         foreach (var property in new[] { nameof(Title), nameof(Status), nameof(IsEditable), nameof(CanSelectCustomer),
                      nameof(CustomerName), nameof(Base), nameof(Total), nameof(VatRows), nameof(SendEmailToolTip), nameof(SentInfo) })
         {
@@ -138,56 +220,23 @@ public partial class DocumentDetailViewModel : ObservableObject
         NotifyCommands();
     }
 
-    private IEnumerable<string> InputErrors() => Lines.Select((line, index) => (line, index))
-        .Where(item => !item.line.IsValid).Select(item => $"Řádek {item.index + 1}: {DocumentTexts.InvalidNumber}.");
-
     private IReadOnlyList<VatSummaryRow> GetVatRows() => Document switch
     {
-        TaxInvoice invoice when Lines.All(line => line.IsValid) => invoice.CalculateVatSummary().Rows,
-        CreditNote credit when Lines.All(line => line.IsValid) => credit.CalculateVatSummary().Rows,
+        TaxInvoice invoice when LinesEditor.AreValid => invoice.CalculateVatSummary().Rows,
+        CreditNote credit when LinesEditor.AreValid => credit.CalculateVatSummary().Rows,
         _ => []
     };
 
-    private void AppendLine(InvoiceLine line)
+    private void NotifyCommands()
     {
-        var item = new InvoiceLineViewModel(line, HasVat ? _editor.Rates.All : []);
-        item.PropertyChanged += HandleLineChanged;
-        Lines.Add(item);
+        SaveCommand.NotifyCanExecuteChanged();
+        IssueCommand.NotifyCanExecuteChanged();
+        MarkPaidCommand.NotifyCanExecuteChanged();
+        CancelDocumentCommand.NotifyCanExecuteChanged();
+        DeleteCommand.NotifyCanExecuteChanged();
+        CreateCreditNoteCommand.NotifyCanExecuteChanged();
+        ExportCommand.NotifyCanExecuteChanged();
+        SendEmailCommand.NotifyCanExecuteChanged();
+        LinesEditor.SetEditable(IsEditable);
     }
-
-    private void HandleLineChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs args)
-    {
-        if (args.PropertyName is nameof(InvoiceLineViewModel.Description) or nameof(InvoiceLineViewModel.Quantity)
-            or nameof(InvoiceLineViewModel.Unit) or nameof(InvoiceLineViewModel.UnitPrice)
-            or nameof(InvoiceLineViewModel.Discount) or nameof(InvoiceLineViewModel.VatRate))
-        {
-            UpdateDraft();
-        }
-    }
-
-    private bool CanEditLines() => IsEditable;
-    private bool CanRemoveLine() => IsEditable && SelectedLine is not null;
-
-    [RelayCommand(CanExecute = nameof(CanEditLines))]
-    private void AddLine()
-    {
-        AppendLine(new(string.Empty, 1, "ks", 0, HasVat ? _editor.Rates.Standard : 0, 0));
-        SelectedLine = Lines.Last();
-        UpdateDraft();
-    }
-
-    [RelayCommand(CanExecute = nameof(CanRemoveLine))]
-    private void RemoveLine()
-    {
-        if (SelectedLine is InvoiceLineViewModel line)
-        {
-            line.PropertyChanged -= HandleLineChanged;
-            Lines.Remove(line);
-            SelectedLine = null;
-            UpdateDraft();
-        }
-    }
-
-    private static DateTime? ToCalendar(DateOnly? date) => date?.ToDateTime(TimeOnly.MinValue);
-    private static DateOnly? ToDomain(DateTime? date) => date is DateTime value ? DateOnly.FromDateTime(value) : null;
 }

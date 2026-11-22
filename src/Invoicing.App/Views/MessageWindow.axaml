@@ -7,9 +7,9 @@
   <StackPanel Margin="24" Spacing="18">
     <TextBlock Classes="message" Text="{Binding Message}" />
     <StackPanel Spacing="8" Orientation="Horizontal" HorizontalAlignment="Right">
-      <Button Content="Ne" IsVisible="{Binding Confirm}" Click="CloseNegative" />
-      <Button Classes="accent" Content="Ano" IsVisible="{Binding Confirm}" Click="ClosePositive" />
-      <Button Classes="accent" Content="OK" IsVisible="{Binding !Confirm}" Click="ClosePositive" />
+      <Button Content="Ne" IsVisible="{Binding Confirm}" Command="{Binding RejectCommand}" />
+      <Button Classes="accent" Content="Ano" IsVisible="{Binding Confirm}" Command="{Binding AcceptCommand}" />
+      <Button Classes="accent" Content="OK" IsVisible="{Binding !Confirm}" Command="{Binding AcceptCommand}" />
     </StackPanel>
   </StackPanel>
 </Window>

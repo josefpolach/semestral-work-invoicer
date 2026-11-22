@@ -10,6 +10,11 @@ namespace Invoicing.App.ViewModels;
 /// <summary>Lists and filters documents and opens the document editor.</summary>
 public partial class DocumentsViewModel : ObservableObject
 {
+    private const int DraftFilter = 1;
+    private const int IssuedFilter = 2;
+    private const int PaidFilter = 3;
+    private const int OverdueFilter = 4;
+
     private readonly DocumentWorkspace _workspace;
     private readonly DocumentDelivery _delivery;
     private readonly IDialogService _dialogs;
@@ -28,13 +33,13 @@ public partial class DocumentsViewModel : ObservableObject
         _vatRates = rates;
     }
 
-    public IReadOnlyList<string> Filters { get; } = ["Vše", "Koncepty", "Vystavené", "Zaplacené", "Po splatnosti"];
+    public IReadOnlyList<string> Filters => DocumentTexts.Filters;
     public string? NewToolTip => HasSupplier ? null : DocumentTexts.SupplierRequired;
 
     public async Task LoadAsync()
     {
-        HasSupplier = await _workspace.Suppliers.GetAsync() is not null;
-        _all = await _workspace.Documents.GetAllAsync();
+        HasSupplier = await _workspace.GetSupplierAsync() is not null;
+        _all = await _workspace.GetDocumentsAsync();
         Filter();
     }
 
@@ -56,7 +61,7 @@ public partial class DocumentsViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanOpen))]
     private async Task OpenAsync()
     {
-        if (Selected is not null && await _workspace.Documents.GetByIdAsync(Selected.Id) is Document document)
+        if (Selected is not null && await _workspace.FindDocumentAsync(Selected.Id) is Document document)
         {
             await ShowDocumentAsync(document);
         }
@@ -83,10 +88,10 @@ public partial class DocumentsViewModel : ObservableObject
 
     private bool Matches(Document document, DateOnly today) => FilterIndex switch
     {
-        1 => document.Status == DocumentStatus.Draft,
-        2 => document.Status == DocumentStatus.Issued,
-        3 => document.Status == DocumentStatus.Paid,
-        4 => document.IsOverdue(today),
+        DraftFilter => document.Status == DocumentStatus.Draft,
+        IssuedFilter => document.Status == DocumentStatus.Issued,
+        PaidFilter => document.Status == DocumentStatus.Paid,
+        OverdueFilter => document.IsOverdue(today),
         _ => true
     };
 }

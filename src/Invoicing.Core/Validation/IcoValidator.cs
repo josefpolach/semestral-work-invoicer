@@ -5,7 +5,7 @@ public static class IcoValidator
 {
     private const int Length = 8;
     private const int Modulus = 11;
-    private const int DigitCount = 10;
+    private const int CheckDigitModulus = 10;
 
     public static bool IsValid(string? value)
     {
@@ -20,6 +20,6 @@ public static class IcoValidator
             sum += (value[index] - '0') * (Length - index);
         }
 
-        return (Modulus - sum % Modulus) % DigitCount == value[^1] - '0';
+        return (Modulus - sum % Modulus) % CheckDigitModulus == value[^1] - '0';
     }
 }

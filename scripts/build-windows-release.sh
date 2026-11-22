@@ -13,6 +13,7 @@ dotnet publish src/Invoicing.App/Invoicing.App.csproj -c Release -r win-x64 --se
 mkdir -p "$app_dir/data"
 export UID
 export GID="$(id -g)"
+# Use the public example so Compose does not load the development credentials.
 DATA_DIR="./$app_dir/data" docker compose --env-file .env.example run --rm flyway
 cp .env.example "$app_dir/.env"
 if ! awk -F= '

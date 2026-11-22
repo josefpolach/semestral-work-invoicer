@@ -8,6 +8,6 @@
     <TextBlock Classes="heading" Text="Aplikaci nelze spustit" />
     <TextBlock Classes="message" Text="{Binding Errors}" />
     <TextBlock Classes="message" Text="{Binding Help}" />
-    <Button Classes="accent" Content="OK" HorizontalAlignment="Right" Click="CloseWindow" />
+    <Button Classes="accent" Content="OK" HorizontalAlignment="Right" Command="{Binding CloseCommand}" />
   </StackPanel>
 </Window>

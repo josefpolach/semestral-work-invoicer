@@ -1,5 +1,6 @@
 using Avalonia.Controls;
 using Avalonia.Platform.Storage;
+using Invoicing.App.Texts;
 using Invoicing.App.ViewModels;
 using Invoicing.App.Views;
 
@@ -8,6 +9,7 @@ namespace Invoicing.App.Services;
 /// <summary>Opens modal windows and asks the desktop platform to choose an export file.</summary>
 internal class DialogService(Window main) : IDialogService
 {
+    // The newest open dialog owns the next one.
     private readonly Stack<Window> _windows = new();
     private Window Owner => _windows.TryPeek(out var window) ? window : main;
 
@@ -18,7 +20,7 @@ internal class DialogService(Window main) : IDialogService
     {
         var file = await Owner.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
         {
-            Title = "Export PDF",
+            Title = UiTexts.ExportPdf,
             SuggestedFileName = filename,
             DefaultExtension = "pdf",
             FileTypeChoices = [FilePickerFileTypes.Pdf],
@@ -31,20 +33,14 @@ internal class DialogService(Window main) : IDialogService
     {
         var window = new DocumentDetailWindow { DataContext = model };
         window.Closing += (_, args) => args.Cancel = model.IsBusy;
-        model.CloseRequested += CloseDocument;
+        model.CloseRequested += window.Close;
         try
         {
-            await ShowAsync<bool>(window);
+            await ShowAsync(window);
         }
         finally
         {
-            model.CloseRequested -= CloseDocument;
-        }
-
-        void CloseDocument()
-        {
-            model.IsBusy = false;
-            window.Close();
+            model.CloseRequested -= window.Close;
         }
     }
 
@@ -53,23 +49,27 @@ internal class DialogService(Window main) : IDialogService
         var window = new SendEmailWindow { DataContext = model };
         window.Closing += (_, args) => args.Cancel = model.IsSending;
         model.CloseRequested += result => window.Close(result);
-        return ShowAsync<bool>(window);
+        return ShowAsync(window);
     }
 
-    private Task<bool> OpenMessageAsync(string message, bool confirm)
+    private Task<bool> OpenMessageAsync(string message, bool confirm) =>
+        ShowAsync(CreateMessageWindow(message, confirm));
+
+    internal static MessageWindow CreateMessageWindow(string message, bool confirm)
     {
         var model = new MessageViewModel(message, confirm);
         var window = new MessageWindow { DataContext = model };
-        return ShowAsync<bool>(window);
+        model.CloseRequested += result => window.Close(result);
+        return window;
     }
 
-    private async Task<TResult> ShowAsync<TResult>(Window window)
+    private async Task<bool> ShowAsync(Window window)
     {
         var owner = Owner;
         _windows.Push(window);
         try
         {
-            return await window.ShowDialog<TResult>(owner);
+            return await window.ShowDialog<bool>(owner);
         }
         finally
         {

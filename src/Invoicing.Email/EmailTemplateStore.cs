@@ -5,6 +5,10 @@ namespace Invoicing.Email;
 /// <summary>Reads the embedded invoice and credit note templates.</summary>
 public class EmailTemplateStore
 {
+    public const string SubjectExtension = "subject.txt";
+    public const string HtmlExtension = "html";
+    public const string TextExtension = "txt";
+
     private const string ResourcePrefix = "Invoicing.Email.Templates.";
 
     public string Load(DocumentKind kind, string extension)

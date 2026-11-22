@@ -7,12 +7,15 @@ namespace Invoicing.Pdf.Components;
 
 internal class HeaderComponent(BillingDocument document) : IComponent
 {
+    private const int TitleFontSize = 22;
+    private const int CancelledFontSize = 16;
+
     public void Compose(IContainer container) => container.Column(column =>
     {
-        column.Item().Text($"{PdfTexts.Title(document.Kind)} {PdfTexts.Number} {document.Number}").FontSize(22).Bold();
+        column.Item().Text($"{PdfTexts.Title(document.Kind)} {PdfTexts.Number} {document.Number}").FontSize(TitleFontSize).Bold();
         if (document.Status == DocumentStatus.Cancelled)
         {
-            column.Item().Text(PdfTexts.Cancelled).FontSize(16).Bold();
+            column.Item().Text(PdfTexts.Cancelled).FontSize(CancelledFontSize).Bold();
         }
     });
 }

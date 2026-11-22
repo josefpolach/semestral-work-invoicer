@@ -103,6 +103,22 @@ public class DocumentRepositoryTests
             stored.Select(document => document.Number).Order(StringComparer.Ordinal));
     }
 
+    [Fact]
+    public async Task SaveDraftAsync_DocumentDeletedByAnotherEditor_ReportsStateChange()
+    {
+        using var database = new TemporaryDatabase();
+        await database.CreateAsync();
+        var factory = new SqliteConnectionFactory(database.Path);
+        var customer = TestData.Customer();
+        await new CustomerRepository(factory).SaveAsync(customer);
+        var draft = TestData.Invoice(customer);
+        var repository = new DocumentRepository(factory);
+        await repository.SaveDraftAsync(draft);
+        await repository.DeleteDraftAsync(draft);
+
+        await Assert.ThrowsAsync<DocumentStateChangedException>(() => repository.SaveDraftAsync(draft));
+    }
+
     private static async Task CheckOtherSeriesAsync(DocumentService service, TaxInvoice first, int customerId)
     {
         var credit = await service.CreateCreditNoteAsync(first, TestData.Today);

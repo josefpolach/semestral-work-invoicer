@@ -24,11 +24,7 @@ public class AppSettings
         var errors = new List<ConfigurationError>();
         var standard = ReadRate(values.GetValueOrDefault(SettingKeys.VatRateStandard), SettingKeys.VatRateStandard, errors);
         var reduced = ReadRate(values.GetValueOrDefault(SettingKeys.VatRateReduced), SettingKeys.VatRateReduced, errors);
-        var database = values.GetValueOrDefault(SettingKeys.DatabasePath)?.Trim();
-        if (string.IsNullOrWhiteSpace(database))
-        {
-            errors.Add(new(SettingKeys.DatabasePath, ConfigurationProblem.Missing));
-        }
+        var database = ReadDatabasePath(values, errors);
 
         var ares = ReadUrl(values.GetValueOrDefault(SettingKeys.AresBaseUrl), SettingKeys.AresBaseUrl, errors);
         var lettr = ReadUrl(values.GetValueOrDefault(SettingKeys.LettrBaseUrl), SettingKeys.LettrBaseUrl, errors);
@@ -43,6 +39,17 @@ public class AppSettings
                 values.GetValueOrDefault(SettingKeys.EmailFromAddress))
         };
         return new(settings, errors.AsReadOnly());
+    }
+
+    private static string? ReadDatabasePath(IReadOnlyDictionary<string, string> values, List<ConfigurationError> errors)
+    {
+        var database = values.GetValueOrDefault(SettingKeys.DatabasePath)?.Trim();
+        if (string.IsNullOrWhiteSpace(database))
+        {
+            errors.Add(new(SettingKeys.DatabasePath, ConfigurationProblem.Missing));
+        }
+
+        return database;
     }
 
     private static decimal ReadRate(string? value, string key, List<ConfigurationError> errors)

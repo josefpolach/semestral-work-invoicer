@@ -8,6 +8,8 @@ namespace Invoicing.Email;
 /// <summary>Submits a transactional e-mail to Lettr.</summary>
 public class LettrEmailSender(HttpClient httpClient, string baseUrl, string apiKey) : IEmailSender
 {
+    private const string BearerScheme = "Bearer";
+    private const string Redacted = "[redacted]";
     private const string SendPath = "/emails";
     private const string JsonMediaType = "application/json";
     private const string IdempotencyHeader = "Idempotency-Key";
@@ -39,7 +41,7 @@ public class LettrEmailSender(HttpClient httpClient, string baseUrl, string apiK
     private HttpRequestMessage CreateRequest(EmailMessage message, string idempotencyKey)
     {
         var request = new HttpRequestMessage(HttpMethod.Post, baseUrl.TrimEnd('/') + SendPath);
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
+        request.Headers.Authorization = new AuthenticationHeaderValue(BearerScheme, apiKey);
         request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue(JsonMediaType));
         request.Headers.Add(IdempotencyHeader, idempotencyKey);
         request.Content = JsonContent.Create(new LettrRequest(message));
@@ -60,7 +62,7 @@ public class LettrEmailSender(HttpClient httpClient, string baseUrl, string apiK
         var error = MapStatus(status);
         var details = error == EmailSendError.InvalidData
             ? await LettrResponse.ReadDetailsAsync(response.Content, token) : null;
-        return EmailSendResult.Failure(error, details?.Replace(apiKey, "[redacted]", StringComparison.Ordinal), status);
+        return EmailSendResult.Failure(error, details?.Replace(apiKey, Redacted, StringComparison.Ordinal), status);
     }
 
     private static EmailSendError MapStatus(int status) => status switch

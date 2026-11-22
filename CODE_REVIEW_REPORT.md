@@ -369,3 +369,88 @@ Add two or three sentences each.
 - **Careful secret handling.** `EmailSettings.ToString()` hides the key, the key is redacted from `Details`, the release script refuses a non-empty key, and the `.env` copy is Debug-only.
 - **Thoughtful retry logic in the send dialog.** The idempotency key is reused, and the recipient is locked after an "uncertain" failure, so a retry can never send a different e-mail under the same key. The comment explains why.
 - **Clean layering.** Core has no packages and no references; ViewModels only use Core interfaces and services; every view has `x:DataType`; the code-behind is practically empty.
+
+---
+
+# Re-review: fixes on branch `code-review-findings` (2026-11-22, uncommitted changes)
+
+Change review according to CODE_REVIEW.md §5: every changed file was read in full, and the automated checks were re-run on the working tree.
+
+## Verdict
+
+**Ready to submit**, once the two release and commit steps below are done and the manual GUI scenario has been run. All 3 Majors are fixed, and so are 12 of 14 Minors, all 7 Level findings and Q2–Q5. No new Blocker or Major was introduced.
+
+## Automated checks
+
+| Check | Result |
+|---|---|
+| `dotnet build` | ✅ 0 warnings, 0 errors |
+| `dotnet format --verify-no-changes` | ✅ exit 0 |
+| `dotnet test` | ✅ 202 passed (was 137), 0 failed, 0 skipped |
+| Required test classes (§15.1) | ✅ all 25 present |
+| Grep checks 1–20 | ✅ no hits except the accepted ones; no Czech literals in App `.cs` files outside `Texts/` |
+| Methods > 25 lines | ✅ none (longest is 20) |
+| Secrets / git | ✅ `.env` is ignored and not tracked; no `.db` files are tracked |
+
+## Status of the original findings
+
+| Finding | Status | Note |
+|---|---|---|
+| M1 broad `InvalidOperationException` catch | ✅ fixed | catches only `SqliteException` and the new `DocumentStateChangedException`; export and e-mail no longer go through the DB wrapper; a repository test covers the new exception |
+| M2 Czech literals outside `Texts/` | ✅ fixed | `UiTexts` added; `EmailTexts`, `StartupTexts` and `DocumentTexts` extended; `Řádek {n}` exists once (`ValidationTexts.Line`) |
+| M3 `StartAsync` 28 lines | ✅ fixed | now 20 lines |
+| m1 magic numbers and strings | ✅ fixed | timeouts, filter indexes, PDF layout (`PdfTableStyle`), prefixes, template extensions, placeholders, IBAN constants, `Bearer` |
+| m2 methods with 16–22 lines | ✅ mostly | the remaining 16–20-line methods are mostly `try`/`catch` mapping; acceptable |
+| m3 `DocumentDetailViewModel` ≈370 lines | ✅ improved | 242 lines; header fields moved to `DocumentEditor`, lines to `DocumentLinesViewModel` |
+| m4 "why" comments | ✅ fixed | IBAN, SPAYD, VAT flag, release script, `deferred: false` |
+| m5 discarded `ToVariableSymbol` | ✅ fixed | comment added |
+| m6 behaviour-switching parameters | ✅ fixed | named arguments; `ValidateSupplyDateSet` and `WarnIfIssuedLate` |
+| m7 base class checks its subclass | ✅ fixed | `PrepareLine` override |
+| m8 code-behind click handlers | ✅ fixed | `Accept`/`Reject`/`Close` commands |
+| m9 test structure | ⚠️ almost | see R2 |
+| m10 constructor parameters and dependency chains | ✅ fixed | `DocumentDelivery` has 4 parameters; `DocumentWorkspace` has methods instead of exposed repositories |
+| m11 invisible process after a startup error | ✅ fixed | `ShowUnexpectedError` shuts down when there is no main window |
+| m12 `.dockerignore` / empty folders | ⚠️ partly | see R3 |
+| m13 `DigitCount` | ✅ fixed | renamed to `CheckDigitModulus` |
+| m14 README §18 items 10–11 | ✅ fixed | also documents the VAT-rate limitation (Q4) |
+| L1–L7 | ✅ all fixed | `foreach` in `VatSummary`, static constructor in `PdfSetup`, commented startup trick, non-generic `ShowAsync`, no property patterns, no tuples, `if` chain in `EmailAvailability`, normal constructor in `CreditNote` |
+| Q2, Q3, Q5 | ✅ resolved | AGENTS.md Appendix B 13–14 and §19.7 updated |
+| Q4 | ✅ documented | README "Database and Flyway" |
+| Q1 | ✅ resolved | the git repository is now present |
+
+## New or remaining findings (all Minor)
+
+### R1 · Minor · `src/Invoicing.App/ViewModels/DocumentDetailViewModel.cs:9` (`using Invoicing.Data;`)
+
+**Rule:** AGENTS.md §3.10 (ViewModels depend on Core, not on infrastructure)
+
+**Problem:** The ViewModel now imports the Data project only to catch `DocumentStateChangedException`. `SqliteException` was already caught there before, and that was accepted. But an exception type that is part of the repository *contract* belongs next to the contract.
+
+**Fix:** Move `DocumentStateChangedException` to `Invoicing.Core/Repositories/` (namespace `Invoicing.Core.Repositories`). It is one file, and the namespace changes in the repository and the ViewModel. The `using Invoicing.Data;` line then disappears from the ViewModel.
+
+### R2 · Minor · `tests/Invoicing.Tests/Data/DocumentRepositoryTests.cs`
+
+**Rule:** AGENTS.md §15 (`Method_Condition_Expected`)
+
+**Problem:** Three names still have only two parts: `SaveDraftAsync_RoundTripsDecimalTextAndReplacesLines`, `IssueAsync_AssignsYearlyNumbersAndKeepsSnapshots`, `IssueAsync_ConcurrentInvoicesUseConsecutiveNumbers`.
+
+**Fix:** For example, `SaveDraftAsync_LinesWithDecimals_RoundTripAndReplace`, `IssueAsync_TwoYearsAndCreditNote_AssignsYearlyNumbers`, `IssueAsync_ConcurrentInvoices_UseConsecutiveNumbers`.
+
+### R3 · Minor · `.dockerignore`
+
+**Rule:** course requirement 6 (no dead code or leftovers)
+
+**Problem:** The file is still there, but nothing uses it, because there is no Dockerfile. (The empty `.aws`, `.codex` and `.agents` folders are not tracked by git, so they are not a problem.)
+
+**Fix:** Delete it.
+
+### Notes (no action required, but be ready to explain at the exam)
+
+- `DocumentDelivery` (a service) now creates `SendEmailViewModel` and drives the dialogs. That direction (service → ViewModel) is unusual. Be ready to say why: it keeps `DocumentDetailViewModel` small, and the whole "PDF → export or e-mail" flow lives in one place.
+- `PdfSetup.Initialize()` has an empty body. That is intentional and documented, because calling it triggers the static constructor.
+
+## Before submission
+
+1. **Rebuild the release:** `artifacts/release/Invoicing-win-x64.zip` was built **before** these changes. Run `scripts/build-windows-release.sh` again and repeat the two zip checks from CODE_REVIEW §6.
+2. **Commit** the changes (one logical fix per commit is recommended in CODE_REVIEW §15; at least one commit), then merge to `main`.
+3. **Run the manual scenario** AGENTS.md §14.11. It has not been verified (no GUI run). The detail window was refactored heavily (header to `DocumentEditor`, lines to `DocumentLinesViewModel`), so check especially that date pickers, customer selection, adding and removing lines, live totals and validation messages, and the "Smazat" and "Opravný doklad" flows still work.

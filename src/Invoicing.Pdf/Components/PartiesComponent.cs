@@ -8,9 +8,11 @@ namespace Invoicing.Pdf.Components;
 
 internal class PartiesComponent(BillingDocument document) : IComponent
 {
+    private const int PartySpacing = 16;
+
     public void Compose(IContainer container) => container.Row(row =>
     {
-        row.Spacing(16);
+        row.Spacing(PartySpacing);
         row.RelativeItem().Column(column => AddParty(column, PdfTexts.Supplier, document.Supplier,
             document.Kind != DocumentKind.NonVatInvoice));
         row.RelativeItem().Column(column => AddParty(column, PdfTexts.Customer, document.Customer, true));
@@ -27,6 +29,15 @@ internal class PartiesComponent(BillingDocument document) : IComponent
         column.Item().Text(party.Name);
         column.Item().Text(party.Street);
         column.Item().Text($"{party.PostalCode} {party.City}");
+        AddIdentifiers(column, party, showDic);
+        if (party is Supplier supplier)
+        {
+            column.Item().Text(supplier.RegisterEntry);
+        }
+    }
+
+    private static void AddIdentifiers(ColumnDescriptor column, Party party, bool showDic)
+    {
         if (!string.IsNullOrWhiteSpace(party.Ico))
         {
             column.Item().Text($"{PdfTexts.CompanyNumber}: {party.Ico}");
@@ -35,11 +46,6 @@ internal class PartiesComponent(BillingDocument document) : IComponent
         if (showDic && !string.IsNullOrWhiteSpace(party.Dic))
         {
             column.Item().Text($"{PdfTexts.TaxNumber}: {party.Dic}");
-        }
-
-        if (party is Supplier supplier)
-        {
-            column.Item().Text(supplier.RegisterEntry);
         }
     }
 }

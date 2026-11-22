@@ -8,17 +8,18 @@ public static class PdfSetup
 {
     internal const string FontFamily = "Noto Sans";
     private const string FontResources = "Invoicing.Pdf.Resources.Fonts.";
-    private static readonly Lazy<bool> _initialized = new(RegisterFonts);
 
-    public static void Initialize() => _ = _initialized.Value;
-
-    private static bool RegisterFonts()
+    static PdfSetup()
     {
         QuestPDF.Settings.License = LicenseType.Community;
         QuestPDF.Settings.ThrowOnMissingTextGlyphs = true;
         var assembly = typeof(PdfSetup).Assembly;
         FontManager.RegisterFontFromEmbeddedResource(assembly, FontResources + "NotoSans-Regular.ttf");
         FontManager.RegisterFontFromEmbeddedResource(assembly, FontResources + "NotoSans-Bold.ttf");
-        return true;
+    }
+
+    /// <summary>Triggers the static constructor that registers the fonts and licence once.</summary>
+    public static void Initialize()
+    {
     }
 }

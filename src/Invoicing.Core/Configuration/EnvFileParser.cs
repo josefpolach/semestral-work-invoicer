@@ -16,16 +16,21 @@ public static class EnvFileParser
                 continue;
             }
 
-            var separator = line.IndexOf('=');
-            if (separator <= 0)
-            {
-                throw new EnvFileFormatException(lineNumber);
-            }
-
-            values[line[..separator].Trim()] = Unquote(line[(separator + 1)..].Trim());
+            AddSetting(values, line, lineNumber);
         }
 
         return values;
+    }
+
+    private static void AddSetting(Dictionary<string, string> values, string line, int lineNumber)
+    {
+        var separator = line.IndexOf('=');
+        if (separator <= 0)
+        {
+            throw new EnvFileFormatException(lineNumber);
+        }
+
+        values[line[..separator].Trim()] = Unquote(line[(separator + 1)..].Trim());
     }
 
     private static string Unquote(string value) =>

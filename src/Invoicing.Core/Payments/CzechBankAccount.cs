@@ -10,6 +10,9 @@ public class CzechBankAccount
     private const string Pattern = @"\A(?:([0-9]{1,6})-)?([0-9]{2,10})/([0-9]{4})\z";
     private const int PrefixWidth = 6;
     private const int AccountWidth = 10;
+    private const int IbanModulus = 97;
+    private const int IbanCheckBase = 98;
+    // ISO 13616 treats C and Z as 12 and 35, followed by two zero check digits.
     private const string CountryCheckSuffix = "123500";
 
     private CzechBankAccount(string prefix, string number, string bankCode)
@@ -33,12 +36,13 @@ public class CzechBankAccount
     public string ToIban()
     {
         var domestic = BankCode + Prefix.PadLeft(PrefixWidth, '0') + Number.PadLeft(AccountWidth, '0');
+        // The rearranged IBAN is too long for a long, so compute its remainder one digit at a time.
         var remainder = 0;
         foreach (var digit in domestic + CountryCheckSuffix)
         {
-            remainder = (remainder * 10 + digit - '0') % 97;
+            remainder = (remainder * 10 + digit - '0') % IbanModulus;
         }
 
-        return "CZ" + (98 - remainder).ToString("00", CultureInfo.InvariantCulture) + domestic;
+        return "CZ" + (IbanCheckBase - remainder).ToString("00", CultureInfo.InvariantCulture) + domestic;
     }
 }

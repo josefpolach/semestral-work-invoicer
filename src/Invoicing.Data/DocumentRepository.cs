@@ -19,7 +19,7 @@ public class DocumentRepository(SqliteConnectionFactory factory) : IDocumentRepo
     {
         RequireDraft(document);
         await using var connection = await factory.OpenConnectionAsync();
-        await using var transaction = connection.BeginTransaction();
+        await using var transaction = connection.BeginTransaction(deferred: false);
         var id = await SaveAsync(transaction, document);
         await transaction.CommitAsync();
         AssignNewId(document, id);
@@ -31,7 +31,7 @@ public class DocumentRepository(SqliteConnectionFactory factory) : IDocumentRepo
         var issueDate = document.IssueDate ?? throw new InvalidOperationException("The issue date is required.");
         await using var connection = await factory.OpenConnectionAsync();
         // The immediate transaction serializes the sequence read and write.
-        await using var transaction = connection.BeginTransaction();
+        await using var transaction = connection.BeginTransaction(deferred: false);
         var number = await TakeNumberAsync(transaction, document.Kind, issueDate.Year);
         var issued = CopyDraft(document);
         issued.Issue(number, supplier);
@@ -82,7 +82,8 @@ public class DocumentRepository(SqliteConnectionFactory factory) : IDocumentRepo
         var number = DocumentNumbering.Format(series, year, next);
         if (series == NumberSeries.Invoice)
         {
-            DocumentNumbering.ToVariableSymbol(number);
+            // A long sequence can exceed the bank's variable-symbol limit. Keep that number unissued.
+            _ = DocumentNumbering.ToVariableSymbol(number);
         }
 
         await connection.ExecuteAsync(DocumentQueries.WriteSequence,
@@ -152,7 +153,7 @@ public class DocumentRepository(SqliteConnectionFactory factory) : IDocumentRepo
     {
         if (affected != 1)
         {
-            throw new InvalidOperationException("The document no longer has the expected status.");
+            throw new DocumentStateChangedException();
         }
     }
 }

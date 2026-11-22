@@ -33,6 +33,14 @@ internal static class EmailTexts
         : "Odesílání e-mailů: vypnuto – " + string.Join(", ", settings.Problems.Select(problem =>
             problem.Problem == ConfigurationProblem.Missing ? "chybí " + problem.Key : "neplatná hodnota " + problem.Key));
 
-    public static string FormatDate(DocumentEmailRecord record) =>
+    public const string InvalidRecipient = "Zadejte platnou e-mailovou adresu.";
+    public const string ReceiptSaveFailed = "Potvrzení o odeslání se nepodařilo uložit. Zkuste odeslání znovu v tomto okně.";
+
+    public static string Sent(string? address) => $"E-mail byl odeslán na {address}.";
+    public static string SentInfo(DocumentEmailRecord record) => $"Odesláno {FormatDate(record)} na {record.SentTo}";
+    public static string PreviouslySent(DocumentEmailRecord record) =>
+        $"Tento doklad už byl odeslán {FormatDate(record)} na {record.SentTo}.";
+
+    private static string FormatDate(DocumentEmailRecord record) =>
         CzechFormat.FormatDate(DateOnly.FromDateTime(record.SentAt.LocalDateTime));
 }

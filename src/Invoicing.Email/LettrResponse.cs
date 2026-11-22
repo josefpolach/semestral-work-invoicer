@@ -7,19 +7,20 @@ internal static class LettrResponse
     public static async Task<string?> ReadIdAsync(HttpContent content, CancellationToken token)
     {
         using var json = await ReadJsonAsync(content, token);
-        return json?.RootElement is { ValueKind: JsonValueKind.Object } root &&
-            root.TryGetProperty("data", out var data) && data.ValueKind == JsonValueKind.Object
+        return json is not null && json.RootElement.ValueKind == JsonValueKind.Object &&
+            json.RootElement.TryGetProperty("data", out var data) && data.ValueKind == JsonValueKind.Object
             ? GetText(data, "request_id") : null;
     }
 
     public static async Task<string?> ReadDetailsAsync(HttpContent content, CancellationToken token)
     {
         using var json = await ReadJsonAsync(content, token);
-        if (json?.RootElement is not { ValueKind: JsonValueKind.Object } root)
+        if (json is null || json.RootElement.ValueKind != JsonValueKind.Object)
         {
             return null;
         }
 
+        var root = json.RootElement;
         var details = new List<string>();
         if (GetText(root, "message") is string message)
         {

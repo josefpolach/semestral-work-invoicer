@@ -24,8 +24,9 @@ public class TaxInvoice(DocumentHeader header, IEnumerable<InvoiceLine> lines, D
 
     public override IReadOnlyList<ValidationMessage> Validate(Supplier? supplier, VatRates vatRates)
     {
-        var messages = ValidateCommon(supplier, vatRates, false);
-        DocumentValidation.ValidateSupplyDate(messages, TaxableSupplyDate, IssueDate);
+        var messages = ValidateCommon(supplier, vatRates, needsVatPayer: true, allowNegativeQuantity: false);
+        DocumentValidation.ValidateSupplyDateSet(messages, TaxableSupplyDate);
+        DocumentValidation.WarnIfIssuedLate(messages, TaxableSupplyDate, IssueDate);
         return messages;
     }
 

@@ -34,7 +34,7 @@ public partial class SupplierViewModel : ObservableObject
     public event Action? Saved;
     public PartyForm Form { get; } = new();
     public string EmailStatus { get; }
-    public string Iban => CzechBankAccount.TryParse(BankAccount, out var account) ? account.ToIban() : "Neplatné číslo účtu";
+    public string Iban => CzechBankAccount.TryParse(BankAccount, out var account) ? account.ToIban() : UiTexts.InvalidBankAccount;
     public IEnumerable<string> Messages => ReadForm().Validate().Select(ValidationTexts.Format);
 
     public async Task LoadAsync()
@@ -75,7 +75,7 @@ public partial class SupplierViewModel : ObservableObject
     {
         await _suppliers.SaveAsync(ReadForm());
         Saved?.Invoke();
-        await _dialogs.ShowMessageAsync("Údaje dodavatele byly uloženy.");
+        await _dialogs.ShowMessageAsync(UiTexts.SupplierSaved);
     }
 
     private Supplier ReadForm()

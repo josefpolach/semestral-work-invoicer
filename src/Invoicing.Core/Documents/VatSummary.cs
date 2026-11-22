@@ -10,13 +10,18 @@ public class VatSummary
     public decimal TotalVat => Rows.Sum(row => row.VatAmount);
     public decimal Total => TotalBase + TotalVat;
 
-    public static VatSummary Calculate(IEnumerable<InvoiceLine> lines) => new(lines.GroupBy(line => line.VatRate)
-        .OrderByDescending(group => group.Key).Select(CalculateRow).ToList().AsReadOnly());
-
-    private static VatSummaryRow CalculateRow(IGrouping<decimal, InvoiceLine> group)
+    public static VatSummary Calculate(IEnumerable<InvoiceLine> lines)
     {
-        // Section 37 of the VAT Act: calculate VAT from the sum of bases for each rate.
-        var taxBase = group.Sum(line => line.CalculateBase());
-        return new(group.Key, taxBase, Math.Round(taxBase * group.Key / 100, 2, MidpointRounding.AwayFromZero));
+        var rows = new List<VatSummaryRow>();
+        var groups = lines.GroupBy(line => line.VatRate).OrderByDescending(group => group.Key);
+        foreach (var group in groups)
+        {
+            // Section 37 of the VAT Act: calculate VAT from the sum of bases for each rate.
+            var taxBase = group.Sum(line => line.CalculateBase());
+            var vat = Math.Round(taxBase * group.Key / 100, 2, MidpointRounding.AwayFromZero);
+            rows.Add(new(group.Key, taxBase, vat));
+        }
+
+        return new(rows.AsReadOnly());
     }
 }

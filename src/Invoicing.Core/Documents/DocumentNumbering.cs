@@ -5,6 +5,7 @@ namespace Invoicing.Core.Documents;
 /// <summary>Formats yearly document numbers and payment references.</summary>
 public static class DocumentNumbering
 {
+    private const string CreditNotePrefix = "OD-";
     private const int MaxVariableSymbolLength = 10;
 
     public static NumberSeries GetSeries(DocumentKind kind) => kind switch
@@ -22,7 +23,7 @@ public static class DocumentNumbering
         return series switch
         {
             NumberSeries.Invoice => number,
-            NumberSeries.CreditNote => "OD-" + number,
+            NumberSeries.CreditNote => CreditNotePrefix + number,
             _ => throw new ArgumentOutOfRangeException(nameof(series))
         };
     }

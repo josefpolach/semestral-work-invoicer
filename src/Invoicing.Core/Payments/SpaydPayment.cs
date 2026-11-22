@@ -34,6 +34,7 @@ public class SpaydPayment(string iban, decimal amount, string variableSymbol, Da
 
     private static string NormalizeMessage(string value)
     {
+        // Form D separates combining marks from their letters so the ASCII filter can drop them.
         var characters = value.Normalize(NormalizationForm.FormD).ToUpperInvariant()
             .Where(character => character is >= ' ' and <= '~' and not '*');
         var trimmed = new string(characters.ToArray()).Trim();

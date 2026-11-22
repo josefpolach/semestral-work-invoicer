@@ -69,7 +69,7 @@ public abstract class Document
     public void ReplaceLines(IEnumerable<InvoiceLine> lines)
     {
         EnsureEditable();
-        var replacement = lines.Select(line => Kind == DocumentKind.NonVatInvoice ? line.WithoutVat() : line).ToList();
+        var replacement = lines.Select(PrepareLine).ToList();
         _lines.Clear();
         _lines.AddRange(replacement);
     }
@@ -121,10 +121,13 @@ public abstract class Document
         }
     }
 
-    protected List<ValidationMessage> ValidateCommon(Supplier? supplier, VatRates? rates, bool creditNote)
+    protected virtual InvoiceLine PrepareLine(InvoiceLine line) => line;
+
+    protected List<ValidationMessage> ValidateCommon(Supplier? supplier, VatRates? rates,
+        bool needsVatPayer, bool allowNegativeQuantity)
     {
         var messages = new List<ValidationMessage>();
-        DocumentValidation.ValidateSupplier(messages, supplier, rates is not null);
+        DocumentValidation.ValidateSupplier(messages, supplier, needsVatPayer);
         if (_customer is null)
         {
             messages.Add(new(ValidationCode.Missing, ValidationTarget.Customer));
@@ -135,7 +138,7 @@ public abstract class Document
         }
 
         DocumentValidation.ValidateDates(messages, IssueDate, DueDate);
-        DocumentValidation.ValidateLines(messages, Lines, rates, creditNote);
+        DocumentValidation.ValidateLines(messages, Lines, rates, allowNegativeQuantity);
         return messages;
     }
 }

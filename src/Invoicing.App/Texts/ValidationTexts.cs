@@ -11,10 +11,12 @@ internal static class ValidationTexts
         {
             ValidationTarget.Supplier => $"Dodavatel: {text}.",
             ValidationTarget.Customer => $"Odběratel: {text}.",
-            ValidationTarget.Line => $"Řádek {message.LinePosition}: {text}.",
+            ValidationTarget.Line => Line(message.LinePosition.GetValueOrDefault(), text),
             _ => text
         };
     }
+
+    public static string Line(int position, string text) => $"Řádek {position}: {text}.";
 
     private static string GetText(ValidationCode code) => code switch
     {

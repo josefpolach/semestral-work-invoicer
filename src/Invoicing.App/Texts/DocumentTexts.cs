@@ -7,7 +7,15 @@ internal static class DocumentTexts
 {
     public const string Draft = "Koncept";
     public const string SupplierRequired = "Nejdříve vyplňte údaje dodavatele.";
+    public const string UnavailableTotal = "—";
     public const string InvalidNumber = "Neplatné číslo";
+
+    public static IReadOnlyList<string> Filters { get; } = ["Vše", "Koncepty", "Vystavené", "Zaplacené", "Po splatnosti"];
+
+    public static string UnitPriceHeader(bool hasVat) => hasVat ? "Cena za jednotku bez DPH" : "Cena za jednotku";
+
+    public static string VatRow(VatSummaryRow row) =>
+        $"{CzechFormat.FormatQuantity(row.VatRate)} % · Základ {CzechFormat.FormatMoney(row.TaxBase)} · DPH {CzechFormat.FormatMoney(row.VatAmount)}";
 
     public static string Kind(DocumentKind kind) => kind switch
     {

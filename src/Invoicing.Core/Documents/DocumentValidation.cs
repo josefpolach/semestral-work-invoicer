@@ -42,13 +42,18 @@ internal static class DocumentValidation
         }
     }
 
-    public static void ValidateSupplyDate(List<ValidationMessage> messages, DateOnly? supplyDate, DateOnly? issueDate)
+    public static void ValidateSupplyDateSet(List<ValidationMessage> messages, DateOnly? supplyDate)
     {
         if (supplyDate is null)
         {
             messages.Add(new(ValidationCode.TaxableSupplyDateMissing, ValidationTarget.Document));
         }
-        else if (issueDate is DateOnly issue && issue.DayNumber - supplyDate.Value.DayNumber > MaxDaysBetweenSupplyAndIssue)
+    }
+
+    public static void WarnIfIssuedLate(List<ValidationMessage> messages, DateOnly? supplyDate, DateOnly? issueDate)
+    {
+        if (supplyDate is DateOnly supply && issueDate is DateOnly issue &&
+            issue.DayNumber - supply.DayNumber > MaxDaysBetweenSupplyAndIssue)
         {
             // Section 28 of the VAT Act sets the issuance deadline for tax invoices.
             messages.Add(new(ValidationCode.IssuedLongAfterTaxableSupply, ValidationTarget.Document,
@@ -57,7 +62,7 @@ internal static class DocumentValidation
     }
 
     public static void ValidateLines(List<ValidationMessage> messages, IReadOnlyList<InvoiceLine> lines,
-        VatRates? rates, bool creditNote)
+        VatRates? rates, bool allowNegativeQuantity)
     {
         if (lines.Count == 0)
         {
@@ -66,25 +71,33 @@ internal static class DocumentValidation
 
         for (var index = 0; index < lines.Count; index++)
         {
-            foreach (var code in GetLineIssues(lines[index], rates, creditNote))
+            foreach (var code in GetLineIssues(lines[index], rates, allowNegativeQuantity))
             {
                 messages.Add(new(code, ValidationTarget.Line, LinePosition: index + 1));
             }
         }
     }
 
-    private static IEnumerable<ValidationCode> GetLineIssues(InvoiceLine line, VatRates? rates, bool creditNote)
+    private static IEnumerable<ValidationCode> GetLineIssues(InvoiceLine line, VatRates? rates, bool allowNegativeQuantity)
     {
         if (string.IsNullOrWhiteSpace(line.Description))
         {
             yield return ValidationCode.DescriptionMissing;
         }
 
-        if (creditNote ? line.Quantity == 0 : line.Quantity <= 0)
+        if (allowNegativeQuantity ? line.Quantity == 0 : line.Quantity <= 0)
         {
-            yield return creditNote ? ValidationCode.QuantityZero : ValidationCode.QuantityNotPositive;
+            yield return allowNegativeQuantity ? ValidationCode.QuantityZero : ValidationCode.QuantityNotPositive;
         }
 
+        foreach (var issue in GetPriceIssues(line, rates))
+        {
+            yield return issue;
+        }
+    }
+
+    private static IEnumerable<ValidationCode> GetPriceIssues(InvoiceLine line, VatRates? rates)
+    {
         if (line.UnitPriceWithoutVat < 0)
         {
             yield return ValidationCode.UnitPriceNegative;
