@@ -1,9 +1,0 @@
-.git
-.idea
-.env
-**/.env
-**/bin
-**/obj
-**/TestResults
-data
-artifacts

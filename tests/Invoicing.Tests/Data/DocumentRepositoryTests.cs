@@ -1,4 +1,5 @@
 using Invoicing.Core.Documents;
+using Invoicing.Core.Repositories;
 using Invoicing.Core.Services;
 using Invoicing.Core.Validation;
 using Invoicing.Data;
@@ -10,7 +11,7 @@ namespace Invoicing.Tests.Data;
 public class DocumentRepositoryTests
 {
     [Fact]
-    public async Task SaveDraftAsync_RoundTripsDecimalTextAndReplacesLines()
+    public async Task SaveDraftAsync_LinesWithDecimals_RoundTripAndReplace()
     {
         using var database = new TemporaryDatabase();
         await database.CreateAsync();
@@ -35,7 +36,7 @@ public class DocumentRepositoryTests
     }
 
     [Fact]
-    public async Task IssueAsync_AssignsYearlyNumbersAndKeepsSnapshots()
+    public async Task IssueAsync_TwoYearsAndCreditNote_AssignsNumbersAndPreservesSnapshots()
     {
         using var database = new TemporaryDatabase();
         await database.CreateAsync();
@@ -85,7 +86,7 @@ public class DocumentRepositoryTests
     }
 
     [Fact]
-    public async Task IssueAsync_ConcurrentInvoicesUseConsecutiveNumbers()
+    public async Task IssueAsync_ConcurrentInvoices_UseConsecutiveNumbers()
     {
         using var database = new TemporaryDatabase();
         await database.CreateAsync();

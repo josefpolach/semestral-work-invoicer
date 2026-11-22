@@ -5,8 +5,8 @@ using Invoicing.App.Texts;
 using Invoicing.Core.Documents;
 using Invoicing.Core.Email;
 using Invoicing.Core.Formatting;
+using Invoicing.Core.Repositories;
 using Invoicing.Core.Services;
-using Invoicing.Data;
 using Microsoft.Data.Sqlite;
 
 namespace Invoicing.App.ViewModels;

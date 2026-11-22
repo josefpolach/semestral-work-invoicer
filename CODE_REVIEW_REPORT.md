@@ -454,3 +454,18 @@ Change review according to CODE_REVIEW.md §5: every changed file was read in fu
 1. **Rebuild the release:** `artifacts/release/Invoicing-win-x64.zip` was built **before** these changes. Run `scripts/build-windows-release.sh` again and repeat the two zip checks from CODE_REVIEW §6.
 2. **Commit** the changes (one logical fix per commit is recommended in CODE_REVIEW §15; at least one commit), then merge to `main`.
 3. **Run the manual scenario** AGENTS.md §14.11. It has not been verified (no GUI run). The detail window was refactored heavily (header to `DocumentEditor`, lines to `DocumentLinesViewModel`), so check especially that date pickers, customer selection, adding and removing lines, live totals and validation messages, and the "Smazat" and "Opravný doklad" flows still work.
+
+---
+
+# Re-check 2 (2026-11-22)
+
+| Item | Status |
+|---|---|
+| R1 `DocumentStateChangedException` location | ✅ moved to `Invoicing.Core.Repositories`; the ViewModel no longer imports `Invoicing.Data` |
+| R2 test names | ✅ all `Data/` tests now use `Method_Condition_Expected` |
+| R3 `.dockerignore` | ✅ deleted |
+| Build / format / tests | ✅ 0 warnings, format clean, 202 / 202 passed |
+| Release zip | ✅ rebuilt after the last source change (12:43); `.env` has an empty `LETTR_API_KEY`; `.exe` and `invoicing.db` are present |
+| Secrets and git hygiene (CODE_REVIEW §6) | ✅ no `.env`, `.db`, `bin/obj` or `.idea` files are tracked; `.env` was never committed; no Lettr key anywhere in the history |
+
+**Verdict: Ready to submit.** No open findings remain. Still to do: commit the four last changes (`.dockerignore`, the exception move and the test renames), and run the manual GUI scenario from AGENTS.md §14.11, which has not been verified.
